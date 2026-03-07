@@ -1,0 +1,116 @@
+{
+  "id": "task-system",
+  "name": "Task Orchestration System",
+  "description": "Centralized task management, agent coordination, escalation, universal webhook-to-task automation, and a full web dashboard.",
+  "version": "1.0.15",
+  "kind": "tool",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "database": {
+        "type": "object",
+        "description": "PostgreSQL connection settings",
+        "additionalProperties": false,
+        "properties": {
+          "host": {
+            "type": "string",
+            "description": "Database host (default: localhost)"
+          },
+          "port": {
+            "type": "number",
+            "description": "Database port (default: 5432)"
+          },
+          "database": {
+            "type": "string",
+            "description": "Database name (default: openclaw_tasks)"
+          },
+          "user": {
+            "type": "string",
+            "description": "Database user (default: openclaw)"
+          },
+          "password": {
+            "type": "string",
+            "description": "Database password"
+          }
+        }
+      },
+      "webUI": {
+        "type": "object",
+        "description": "Web UI server configuration",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "Enable web UI server (default: true)"
+          },
+          "port": {
+            "type": "number",
+            "description": "Web UI listen port (default: 18790)"
+          },
+          "host": {
+            "type": "string",
+            "description": "Web UI bind address (default: 0.0.0.0)"
+          },
+          "authToken": {
+            "type": "string",
+            "description": "Bearer token for API authentication"
+          }
+        }
+      },
+      "scheduler": {
+        "type": "object",
+        "description": "Task scheduler configuration",
+        "additionalProperties": false,
+        "properties": {
+          "agentId": {
+            "type": "string",
+            "description": "Agent ID to run scheduler cycles (configured during install)"
+          },
+          "checkIntervalMinutes": {
+            "type": "number",
+            "description": "How often to check for stuck/overdue tasks (default: 5)"
+          },
+          "stuckThresholdMinutes": {
+            "type": "number",
+            "description": "Minutes before in_progress task is considered stuck (default: 30)"
+          },
+          "deadlineWarningMinutes": {
+            "type": "number",
+            "description": "Minutes before deadline to trigger warning (default: 30)"
+          },
+          "cleanupDays": {
+            "type": "number",
+            "description": "Days before archiving completed tasks (default: 30)"
+          },
+          "dispatch_cooldown_minutes": {
+            "type": "number",
+            "description": "Minutes before re-dispatching the same task to an agent (default: 15)"
+          },
+          "priority_aging_minutes": {
+            "type": "number",
+            "description": "Minutes a todo task waits before its priority is bumped one level higher (default: 60)"
+          },
+          "preemption_enabled": {
+            "type": "boolean",
+            "description": "Allow higher-priority todo tasks to preempt lower-priority in_progress tasks (default: true)"
+          },
+          "wake_timeout_seconds": {
+            "type": "number",
+            "description": "Timeout in seconds for agent wake calls (default: 120)"
+          }
+        }
+      },
+      "agentPermissions": {
+        "type": "object",
+        "description": "Per-agent permission groups. Keys are agent IDs, values are arrays of group names or aliases. Use '*' for default.",
+        "additionalProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
