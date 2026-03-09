@@ -158,8 +158,24 @@ _tar_size=$(du -sh "$_tmp_tar" 2>/dev/null | cut -f1)
 green "Download complete ($_tar_size)"
 
 cyan "Extracting to: $PLUGIN_DIR"
-tar -xzf "$_tmp_tar" --strip-components=1 -C "$PLUGIN_DIR" 2>&1 | tail -5
+
+# Extract to a temp directory first, then sync to PLUGIN_DIR.
+# This ensures files deleted from the repo are removed from disk.
+_tmp_extract=$(mktemp -d /tmp/openclaw-task-extract-XXXXXX)
+tar -xzf "$_tmp_tar" --strip-components=1 -C "$_tmp_extract" 2>&1 | tail -5
 rm -f "$_tmp_tar"
+
+# Swap: clean out old plugin dir contents and replace with fresh download.
+# This ensures files deleted from the repo don't linger on disk.
+# node_modules and dist are cleaned and rebuilt in the upgrade steps below.
+if command -v rsync &>/dev/null; then
+  rsync -a --delete "$_tmp_extract/" "$PLUGIN_DIR/"
+else
+  find "$PLUGIN_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+  mv "$_tmp_extract"/* "$PLUGIN_DIR/" 2>/dev/null || true
+  mv "$_tmp_extract"/.[!.]* "$PLUGIN_DIR/" 2>/dev/null || true
+fi
+rm -rf "$_tmp_extract"
 
 _file_count=$(find "$PLUGIN_DIR" -type f | wc -l | tr -d ' ')
 _plugin_version=$(jq -r '.version // "unknown"' "$PLUGIN_DIR/package.json" 2>/dev/null || echo "unknown")
@@ -194,7 +210,8 @@ if [[ "$IS_UPGRADE" == true ]]; then
 
   # ── Plugin dependencies ──────────────────────────────────────────────────
   if [[ -f "$PLUGIN_DIR/package.json" ]]; then
-    cyan "Updating plugin dependencies..."
+    cyan "Updating plugin dependencies (clean install)..."
+    rm -rf "$PLUGIN_DIR/node_modules"
     npm install --omit=dev --prefix "$PLUGIN_DIR" 2>&1 | tail -5 || true
     green "Plugin dependencies updated"
   fi
@@ -202,8 +219,8 @@ if [[ "$IS_UPGRADE" == true ]]; then
   # ── Web UI build ─────────────────────────────────────────────────────────
   UI_DIR="$PLUGIN_DIR/web/ui"
   if [[ -d "$UI_DIR" ]]; then
-    cyan "Rebuilding Web UI..."
-    rm -rf "$UI_DIR/dist"
+    cyan "Rebuilding Web UI (clean)..."
+    rm -rf "$UI_DIR/dist" "$UI_DIR/node_modules"
     (cd "$UI_DIR" && npm install --silent 2>&1 | tail -1 || true)
     (cd "$UI_DIR" && npm run build 2>&1 | tail -3) || { red "Web UI build failed"; exit 1; }
     green "Web UI rebuilt ($(du -sh "$UI_DIR/dist/" 2>/dev/null | cut -f1) compressed)"

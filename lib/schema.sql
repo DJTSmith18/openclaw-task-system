@@ -351,4 +351,8 @@ CREATE TABLE schema_version (
 INSERT INTO schema_version (version, description)
 VALUES (1, 'Initial schema — 10 tables'),
        (2, '002_task_templates.sql'),
-       (3, '003_escalation_updates.sql — remove consecutive_errors trigger');
+       (3, '003_escalation_updates.sql — remove consecutive_errors trigger'),
+       (4, '004_unacknowledged_trigger.sql'),
+       (5, '005_agent_hierarchy.sql — reports_to column'),
+       (6, '006_default_escalation_rules.sql'),
+       (7, '007_unblocked_status.sql');

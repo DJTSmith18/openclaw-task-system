@@ -11,5 +11,4 @@ ALTER TABLE escalation_rules
     'permission_required', 'deadline_approaching', 'deadline_missed'
   ));
 
-INSERT INTO schema_version (version, description)
-VALUES (3, '003_escalation_updates.sql — remove consecutive_errors trigger');
+-- Version tracking handled by migrate.sh
