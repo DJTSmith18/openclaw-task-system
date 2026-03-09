@@ -2,12 +2,16 @@
   "id": "task-system",
   "name": "Task Orchestration System",
   "description": "Centralized task management, agent coordination, escalation, universal webhook-to-task automation, and a full web dashboard.",
-  "version": "1.0.15",
+  "version": "1.0.26",
   "kind": "tool",
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
     "properties": {
+      "timezone": {
+        "type": "string",
+        "description": "IANA timezone for all date operations (default: America/Toronto)"
+      },
       "database": {
         "type": "object",
         "description": "PostgreSQL connection settings",
@@ -32,6 +36,10 @@
           "password": {
             "type": "string",
             "description": "Database password"
+          },
+          "maxConnections": {
+            "type": "number",
+            "description": "Connection pool size (default: 10)"
           }
         }
       },
@@ -82,7 +90,14 @@
           "cleanupDays": {
             "type": "number",
             "description": "Days before archiving completed tasks (default: 30)"
-          },
+          }
+        }
+      },
+      "dispatcher": {
+        "type": "object",
+        "description": "Task dispatcher configuration",
+        "additionalProperties": false,
+        "properties": {
           "dispatch_cooldown_minutes": {
             "type": "number",
             "description": "Minutes before re-dispatching the same task to an agent (default: 15)"
@@ -98,6 +113,48 @@
           "wake_timeout_seconds": {
             "type": "number",
             "description": "Timeout in seconds for agent wake calls (default: 120)"
+          },
+          "unack_threshold_minutes": {
+            "type": "number",
+            "description": "Minutes after dispatch before task is considered unacknowledged (default: 10)"
+          },
+          "max_dispatch_attempts": {
+            "type": "number",
+            "description": "Number of dispatch attempts before escalation fires (default: 3)"
+          }
+        }
+      },
+      "escalation": {
+        "type": "object",
+        "description": "Escalation defaults and human notification settings",
+        "additionalProperties": false,
+        "properties": {
+          "default_timeout_minutes": {
+            "type": "number",
+            "description": "Default time before a stuck/blocked task triggers an escalation (default: 30)"
+          },
+          "default_cooldown_minutes": {
+            "type": "number",
+            "description": "Default minimum time between re-escalations for the same task (default: 30)"
+          },
+          "default_max_escalations": {
+            "type": "number",
+            "description": "Default maximum escalations per task per rule (default: 3)"
+          },
+          "human_escalation_session": {
+            "type": "string",
+            "description": "VoIP.ms sessions_send session key for human escalation SMS notifications"
+          }
+        }
+      },
+      "debug": {
+        "type": "object",
+        "description": "Debug flags (runtime, no restart needed)",
+        "additionalProperties": false,
+        "properties": {
+          "scheduler_diagnostics": {
+            "type": "boolean",
+            "description": "Include detailed diagnostics in scheduler_run_cycle output (default: false)"
           }
         }
       },
