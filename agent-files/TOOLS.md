@@ -24,13 +24,6 @@ Your primary toolset comes from the `task-system` plugin. These are registered a
 - `escalation_query` — View escalation history and pending items
 - `escalation_respond` — Acknowledge or resolve an escalation
 
-### Human Notification (VoIP.ms SMS)
-- `sessions_send` — Send a message to a VoIP.ms SMS session for human escalation
-  - The scheduler cron job message includes the exact session key to use
-  - Your message MUST begin with `Send the following message by SMS:` followed by the SMS content
-  - Without this prefix, the session treats your text as an instruction rather than delivering it as SMS
-  - After sending, call `escalation_respond` with response `"resolve"` to mark it delivered
-
 ### Reporting Tools
 - `worklog_add` — Log scheduler actions and findings
 - `worklog_time_report` — Generate time reports grouped by agent/task/category

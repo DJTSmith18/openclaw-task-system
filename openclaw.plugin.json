@@ -2,7 +2,7 @@
   "id": "task-system",
   "name": "Task Orchestration System",
   "description": "Centralized task management, agent coordination, escalation, universal webhook-to-task automation, and a full web dashboard.",
-  "version": "1.0.29",
+  "version": "1.0.30",
   "kind": "tool",
   "configSchema": {
     "type": "object",
@@ -141,9 +141,17 @@
             "type": "number",
             "description": "Default maximum escalations per task per rule (default: 3)"
           },
-          "human_escalation_session": {
+          "human_escalation_channel": {
             "type": "string",
-            "description": "VoIP.ms sessions_send session key for human escalation SMS notifications"
+            "description": "Channel name for human escalation messages (e.g. voipms)"
+          },
+          "human_escalation_account": {
+            "type": "string",
+            "description": "Channel account ID / DID to send from"
+          },
+          "human_escalation_target": {
+            "type": "string",
+            "description": "Recipient identifier (phone number, chat ID, etc.)"
           }
         }
       },
