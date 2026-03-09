@@ -27,7 +27,8 @@ Your primary toolset comes from the `task-system` plugin. These are registered a
 ### Human Notification (VoIP.ms SMS)
 - `sessions_send` — Send a message to a VoIP.ms SMS session for human escalation
   - The scheduler cron job message includes the exact session key to use
-  - Format: `sessions_send` with the session key and a concise message including task #, title, blocked reason, and who blocked it
+  - Your message MUST begin with `Send the following message by SMS:` followed by the SMS content
+  - Without this prefix, the session treats your text as an instruction rather than delivering it as SMS
   - After sending, call `escalation_respond` with response `"resolve"` to mark it delivered
 
 ### Reporting Tools
