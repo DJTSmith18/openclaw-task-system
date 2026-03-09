@@ -38,7 +38,7 @@ function validateValue(val, rule) {
   }
 }
 
-module.exports = function ({ db, eventBus, permissionResolver, openclawJsonPath, cfg }) {
+module.exports = function ({ db, eventBus, permissionResolver, openclawJsonPath, cfg, runtime }) {
   const r = Router();
   const fs = require('fs');
 
@@ -249,6 +249,27 @@ module.exports = function ({ db, eventBus, permissionResolver, openclawJsonPath,
 
       res.json({ ok: true, requiresRestart });
     } catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ── Test message send via openclaw message send ─────────────────────────
+  r.post('/config/test-sms', async (req, res) => {
+    try {
+      const { channel, account, target, message } = req.body;
+      if (!channel || !target || !message) {
+        return res.status(400).json({ error: 'channel, target, and message are required' });
+      }
+      if (!runtime?.system?.runCommandWithTimeout) {
+        return res.status(500).json({ error: 'runtime not available — is the plugin running inside OpenClaw?' });
+      }
+
+      const args = ['openclaw', 'message', 'send', '--channel', channel, '--target', target, '--message', message];
+      if (account) args.push('--account', account);
+
+      await runtime.system.runCommandWithTimeout(args, { timeoutMs: 30000 });
+      res.json({ ok: true, summary: `Sent via ${channel} (account: ${account || 'default'}) to ${target}` });
+    } catch (err) {
+      res.status(500).json({ error: err.message || 'Failed to send test SMS' });
+    }
   });
 
   return r;
