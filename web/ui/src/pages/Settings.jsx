@@ -388,6 +388,7 @@ function PermissionsTab({ permsData, reloadPerms }) {
   const [permsSaving, setPermsSaving] = useState(false);
   const [permsMsg, setPermsMsg] = useState(null);
   const [newAgentId, setNewAgentId] = useState('');
+  const { data: agentsData } = useApi('/agents');
 
   useEffect(() => {
     if (permsData?.agentPermissions && agentPerms === null) {
@@ -488,10 +489,28 @@ function PermissionsTab({ permsData, reloadPerms }) {
             </table>
 
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <input value={newAgentId} onChange={e => setNewAgentId(e.target.value)}
-                placeholder="Agent ID (e.g. dispatch-agent)" style={{ flex: 1 }}
-                onKeyDown={e => e.key === 'Enter' && handleAddAgent()} />
-              <button className="btn btn-sm" onClick={handleAddAgent} disabled={!newAgentId.trim()}>+ Add Agent</button>
+              {(() => {
+                const registeredAgents = (agentsData?.agents || []).map(a => a.agent_id);
+                const existingIds = agentPerms ? Object.keys(agentPerms) : [];
+                const unregistered = registeredAgents.filter(id => !existingIds.includes(id));
+                return (
+                  <>
+                    <select value={newAgentId} onChange={e => setNewAgentId(e.target.value)} style={{ flex: 1 }}>
+                      <option value="">— Select agent to add —</option>
+                      {unregistered.map(id => <option key={id} value={id}>{id}</option>)}
+                      <option disabled>──────────</option>
+                      <option value="__custom">Type custom ID...</option>
+                    </select>
+                    {newAgentId === '__custom' && (
+                      <input value="" onChange={e => setNewAgentId(e.target.value)}
+                        placeholder="Agent ID" style={{ flex: 1 }}
+                        onKeyDown={e => e.key === 'Enter' && handleAddAgent()}
+                        autoFocus />
+                    )}
+                  </>
+                );
+              })()}
+              <button className="btn btn-sm" onClick={handleAddAgent} disabled={!newAgentId.trim() || newAgentId === '__custom'}>+ Add Agent</button>
               {!agentPerms['*'] && (
                 <button className="btn btn-sm" onClick={() => {
                   setAgentPerms(prev => ({ '*': ['system', 'tasks_read'], ...prev }));
