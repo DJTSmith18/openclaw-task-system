@@ -19,7 +19,7 @@ function timeAgo(ts) {
 export default function TaskDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: task, loading, error, reload } = useApi(`/tasks/${id}`);
+  const { data: taskData, loading, error, reload } = useApi(`/tasks/${id}`);
   const { data: commentsData, reload: reloadComments } = useApi(`/tasks/${id}/comments`);
   const { data: depsData, reload: reloadDeps } = useApi(`/tasks/${id}/deps`);
   const { data: logsData, reload: reloadLogs } = useApi(`/worklogs?task_id=${id}&limit=50`);
@@ -37,9 +37,9 @@ export default function TaskDetail() {
 
   if (loading) return <div className="loading">Loading task...</div>;
   if (error) return <div className="error">{error}</div>;
-  if (!task) return <div className="error">Task not found</div>;
+  if (!taskData?.task) return <div className="error">Task not found</div>;
 
-  const t = task;
+  const t = taskData.task;
 
   function startEdit() {
     setForm({ title: t.title, description: t.description || '', priority: t.priority, category: t.category || '', assigned_to_agent: t.assigned_to_agent || '', deadline: t.deadline ? t.deadline.slice(0, 16) : '', tags: (t.tags || []).join(', ') });
@@ -177,12 +177,11 @@ export default function TaskDetail() {
       </div>
 
       {/* Dependencies */}
-      {depsData && (depsData.blocks?.length > 0 || depsData.blocked_by?.length > 0 || depsData.related?.length > 0) && (
+      {depsData && (depsData.depends_on?.length > 0 || depsData.depended_by?.length > 0) && (
         <div className="card section mt-16">
           <div className="section-title">Dependencies</div>
-          {depsData.blocks?.length > 0 && <div className="mb-16"><strong style={{fontSize:12,color:'var(--text-dim)'}}>Blocks:</strong> {depsData.blocks.map(d => <Link key={d.id} to={`/tasks/${d.id}`} className="tag" style={{marginLeft:4}}>#{d.id} {d.title}</Link>)}</div>}
-          {depsData.blocked_by?.length > 0 && <div className="mb-16"><strong style={{fontSize:12,color:'var(--text-dim)'}}>Blocked by:</strong> {depsData.blocked_by.map(d => <Link key={d.id} to={`/tasks/${d.id}`} className="tag" style={{marginLeft:4}}>#{d.id} {d.title}</Link>)}</div>}
-          {depsData.related?.length > 0 && <div><strong style={{fontSize:12,color:'var(--text-dim)'}}>Related:</strong> {depsData.related.map(d => <Link key={d.id} to={`/tasks/${d.id}`} className="tag" style={{marginLeft:4}}>#{d.id} {d.title}</Link>)}</div>}
+          {depsData.depends_on?.length > 0 && <div className="mb-16"><strong style={{fontSize:12,color:'var(--text-dim)'}}>Depends on:</strong> {depsData.depends_on.map(d => <Link key={d.depends_on_task_id} to={`/tasks/${d.depends_on_task_id}`} className="tag" style={{marginLeft:4}}>#{d.depends_on_task_id} {d.title}</Link>)}</div>}
+          {depsData.depended_by?.length > 0 && <div className="mb-16"><strong style={{fontSize:12,color:'var(--text-dim)'}}>Depended by:</strong> {depsData.depended_by.map(d => <Link key={d.task_id} to={`/tasks/${d.task_id}`} className="tag" style={{marginLeft:4}}>#{d.task_id} {d.title}</Link>)}</div>}
         </div>
       )}
 

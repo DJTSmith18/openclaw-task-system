@@ -107,7 +107,7 @@ info "Installing agent configuration files to $AGENT_WORKSPACE"
 echo ""
 
 DEPLOYED_FILES=0
-for FILE in AGENTS.md SOUL.md IDENTITY.md ROLES.md TOOLS.md; do
+for FILE in AGENTS.md SOUL.md IDENTITY.md ROLES.md TOOLS.md WORKER_RULES.md; do
   SRC="$AGENT_FILES_DIR/$FILE"
   DST="$AGENT_WORKSPACE/$FILE"
 
