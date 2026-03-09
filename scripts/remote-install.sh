@@ -115,25 +115,12 @@ if [[ -f "$PLUGIN_DIR/package.json" ]] && already_configured; then
   IS_UPGRADE=true
 fi
 
-# Migrate from old directory name (openclaw-task-system → task-system)
+# Detect install at old directory name (openclaw-task-system → task-system)
 OLD_PLUGIN_DIR="$OPENCLAW_BASE/extensions/openclaw-task-system"
 if [[ "$IS_UPGRADE" == false && -f "$OLD_PLUGIN_DIR/package.json" ]] && already_configured; then
-  yellow "Found existing install at old path: $OLD_PLUGIN_DIR"
-  yellow "The plugin directory should match the manifest id (task-system)."
-  cyan "Moving $OLD_PLUGIN_DIR → $PLUGIN_DIR"
-  mv "$OLD_PLUGIN_DIR" "$PLUGIN_DIR"
-
-  # Update the load path in openclaw.json
-  if command -v jq &>/dev/null; then
-    _tmp=$(mktemp)
-    jq --arg old "$OLD_PLUGIN_DIR" --arg new "$PLUGIN_DIR" '
-      .plugins.load.paths |= map(if . == $old then $new else . end)
-    ' "$CONFIG_FILE" > "$_tmp" && mv "$_tmp" "$CONFIG_FILE"
-    green "Updated load path in openclaw.json"
-  fi
-
   IS_UPGRADE=true
-  green "Migrated to new directory"
+  yellow "Found existing install at old path: $OLD_PLUGIN_DIR"
+  cyan "New files will be installed to $PLUGIN_DIR; old directory will be removed after download."
 fi
 
 # --reconfigure overrides --upgrade and auto-detect
@@ -168,6 +155,23 @@ echo
 
 # Export so install.sh uses the correct paths if invoked below.
 export PLUGIN_DIR
+
+# ── Clean up old directory name if it exists ─────────────────────────────────
+OLD_PLUGIN_DIR="${OLD_PLUGIN_DIR:-$OPENCLAW_BASE/extensions/openclaw-task-system}"
+if [[ -d "$OLD_PLUGIN_DIR" && "$OLD_PLUGIN_DIR" != "$PLUGIN_DIR" ]]; then
+  cyan "Removing old plugin directory: $OLD_PLUGIN_DIR"
+  rm -rf "$OLD_PLUGIN_DIR"
+  green "Old directory removed"
+
+  # Update load path in openclaw.json
+  if command -v jq &>/dev/null && [[ -f "$CONFIG_FILE" ]]; then
+    _tmp=$(mktemp)
+    jq --arg old "$OLD_PLUGIN_DIR" --arg new "$PLUGIN_DIR" '
+      .plugins.load.paths |= map(if . == $old then $new else . end)
+    ' "$CONFIG_FILE" > "$_tmp" && mv "$_tmp" "$CONFIG_FILE"
+    green "Updated load path in openclaw.json: $OLD_PLUGIN_DIR → $PLUGIN_DIR"
+  fi
+fi
 
 # ── Upgrade path: update deps, rebuild UI, run migrations ────────────────────
 if [[ "$IS_UPGRADE" == true ]]; then
