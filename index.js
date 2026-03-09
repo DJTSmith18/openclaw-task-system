@@ -94,6 +94,7 @@ module.exports = function (api) {
             permissionResolver: perms,
             openclawJsonPath,
             eventBus,
+            cfg,
           });
 
           await activeServer.start(abortSignal);
