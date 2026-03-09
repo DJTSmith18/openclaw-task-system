@@ -199,7 +199,13 @@ function EscalationTab({ settings, onUpdate, onSave, onReset, dirty, saving, msg
       </div>
       <NumField label="Default Max Escalations" value={s.default_max_escalations || 3} onChange={v => onUpdate('escalation', 'default_max_escalations', v)}
         desc="Default maximum number of times a single task can be escalated by the same rule" />
-      <SectionSaveBar dirty={dirty} saving={saving} onSave={() => onSave('escalation')} onReset={() => onReset('escalation')} msg={msg} />
+      <div style={{ borderTop: '1px solid var(--border)', margin: '16px 0', paddingTop: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Human Escalation Channel</div>
+        <StrField label="Session Key" value={s.human_escalation_session || ''} onChange={v => onUpdate('escalation', 'human_escalation_session', v)}
+          placeholder="e.g. agent:scheduler:voipms:group:4502669647:4384927975"
+          desc="The sessions_send session key used to notify humans of escalations (e.g. VoIP.ms SMS session). Leave empty to use generic SMS instructions." />
+      </div>
+      <SectionSaveBar dirty={dirty} saving={saving} onSave={() => onSave('escalation')} onReset={() => onReset('escalation')} msg={msg} requiresRestart />
     </div>
   );
 }

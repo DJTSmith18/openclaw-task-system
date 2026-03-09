@@ -123,6 +123,7 @@ module.exports = function (api) {
     runtime: api.runtime,
     logger:  api.logger,
     config:  cfg.scheduler || {},
+    escalationConfig: cfg.escalation || {},
     cronFile,
   });
   scheduler.init().catch((err) => {
