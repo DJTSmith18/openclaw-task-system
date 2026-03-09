@@ -183,29 +183,109 @@ function DispatcherTab({ settings, onUpdate, onSave, onReset, dirty, saving, msg
 
 // ── Tab: Escalation ────────────────────────────────────────────────────────────
 
+function SmsTestPanel() {
+  const { data: channelData } = useApi('/config/channels');
+  const [channel, setChannel] = useState('');
+  const [account, setAccount] = useState('');
+  const [target, setTarget] = useState('');
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const channels = channelData?.channels || [];
+  const selectedChannel = channels.find(c => c.id === channel);
+  const accounts = selectedChannel?.accounts || [];
+
+  // Auto-select first channel/account when data loads
+  useEffect(() => {
+    if (channels.length > 0 && !channel) {
+      setChannel(channels[0].id);
+      if (channels[0].accounts.length > 0) setAccount(channels[0].accounts[0].id);
+    }
+  }, [channelData]);
+
+  function handleChannelChange(v) {
+    setChannel(v);
+    const ch = channels.find(c => c.id === v);
+    setAccount(ch?.accounts?.[0]?.id || '');
+  }
+
+  async function sendTest() {
+    if (!channel || !target || !message) return;
+    setSending(true);
+    setResult(null);
+    try {
+      const res = await api.post('/config/test-sms', { channel, account, target, message });
+      setResult({ type: 'success', text: res.summary || 'Sent successfully' });
+    } catch (err) {
+      setResult({ type: 'error', text: err.message || 'Send failed' });
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="card section" style={{ marginTop: 16 }}>
+      <div className="section-title">Test Message Send</div>
+      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
+        Send a test message via <code>openclaw message send</code> to verify channel delivery.
+      </p>
+      <div className="form-row">
+        <Field label="Channel" desc="Channel plugin to send through">
+          <select value={channel} onChange={e => handleChannelChange(e.target.value)}>
+            {channels.length === 0 && <option value="">No channels found</option>}
+            {channels.map(c => <option key={c.id} value={c.id}>{c.name} ({c.id})</option>)}
+          </select>
+        </Field>
+        <Field label="Account" desc="Account/DID to send from">
+          <select value={account} onChange={e => setAccount(e.target.value)}>
+            {accounts.length === 0 && <option value="">No accounts</option>}
+            {accounts.map(a => <option key={a.id} value={a.id}>{a.label}</option>)}
+          </select>
+        </Field>
+      </div>
+      <StrField label="Target" value={target} onChange={setTarget}
+        desc="Recipient (phone number, chat ID, etc.)" placeholder="e.g. 4384927975" />
+      <Field label="Message">
+        <textarea value={message} onChange={e => setMessage(e.target.value)}
+          placeholder="Test message..." rows={3}
+          style={{ resize: 'vertical' }} />
+      </Field>
+      <Msg msg={result} />
+      <button className="btn btn-primary btn-sm" onClick={sendTest}
+        disabled={sending || !channel || !target || !message}>
+        {sending ? 'Sending...' : 'Send Test Message'}
+      </button>
+    </div>
+  );
+}
+
 function EscalationTab({ settings, onUpdate, onSave, onReset, dirty, saving, msg }) {
   const s = settings.escalation || {};
   return (
-    <div className="card section">
-      <div className="section-title">Escalation Defaults</div>
-      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
-        Default values for escalation rules. Individual rules in the database can override these.
-      </p>
-      <div className="form-row">
-        <NumField label="Default Timeout (min)" value={s.default_timeout_minutes || 30} onChange={v => onUpdate('escalation', 'default_timeout_minutes', v)}
-          desc="Default time before a stuck/blocked task triggers an escalation" />
-        <NumField label="Default Cooldown (min)" value={s.default_cooldown_minutes || 30} onChange={v => onUpdate('escalation', 'default_cooldown_minutes', v)}
-          desc="Default minimum time between re-escalations for the same task" />
+    <div>
+      <div className="card section">
+        <div className="section-title">Escalation Defaults</div>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
+          Default values for escalation rules. Individual rules in the database can override these.
+        </p>
+        <div className="form-row">
+          <NumField label="Default Timeout (min)" value={s.default_timeout_minutes || 30} onChange={v => onUpdate('escalation', 'default_timeout_minutes', v)}
+            desc="Default time before a stuck/blocked task triggers an escalation" />
+          <NumField label="Default Cooldown (min)" value={s.default_cooldown_minutes || 30} onChange={v => onUpdate('escalation', 'default_cooldown_minutes', v)}
+            desc="Default minimum time between re-escalations for the same task" />
+        </div>
+        <NumField label="Default Max Escalations" value={s.default_max_escalations || 3} onChange={v => onUpdate('escalation', 'default_max_escalations', v)}
+          desc="Default maximum number of times a single task can be escalated by the same rule" />
+        <div style={{ borderTop: '1px solid var(--border)', margin: '16px 0', paddingTop: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Human Escalation Channel</div>
+          <StrField label="Session Key" value={s.human_escalation_session || ''} onChange={v => onUpdate('escalation', 'human_escalation_session', v)}
+            placeholder="e.g. agent:scheduler:voipms:group:4502669647:4384927975"
+            desc="The sessions_send session key used to notify humans of escalations (e.g. VoIP.ms SMS session). Leave empty to use generic SMS instructions." />
+        </div>
+        <SectionSaveBar dirty={dirty} saving={saving} onSave={() => onSave('escalation')} onReset={() => onReset('escalation')} msg={msg} requiresRestart />
       </div>
-      <NumField label="Default Max Escalations" value={s.default_max_escalations || 3} onChange={v => onUpdate('escalation', 'default_max_escalations', v)}
-        desc="Default maximum number of times a single task can be escalated by the same rule" />
-      <div style={{ borderTop: '1px solid var(--border)', margin: '16px 0', paddingTop: 16 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Human Escalation Channel</div>
-        <StrField label="Session Key" value={s.human_escalation_session || ''} onChange={v => onUpdate('escalation', 'human_escalation_session', v)}
-          placeholder="e.g. agent:scheduler:voipms:group:4502669647:4384927975"
-          desc="The sessions_send session key used to notify humans of escalations (e.g. VoIP.ms SMS session). Leave empty to use generic SMS instructions." />
-      </div>
-      <SectionSaveBar dirty={dirty} saving={saving} onSave={() => onSave('escalation')} onReset={() => onReset('escalation')} msg={msg} requiresRestart />
+      <SmsTestPanel />
     </div>
   );
 }

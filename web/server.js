@@ -61,7 +61,7 @@ class WebServer {
     app.use('/dashboard/api', authMiddleware);
 
     const routeOpts = { db: this.db, cronFile: this.cronFile, logger: this.logger, eventBus: this.eventBus };
-    const configOpts = { ...routeOpts, permissionResolver: this.permissionResolver, openclawJsonPath: this.openclawJsonPath, cfg: this.cfg };
+    const configOpts = { ...routeOpts, permissionResolver: this.permissionResolver, openclawJsonPath: this.openclawJsonPath, cfg: this.cfg, runtime: this.runtime };
 
     if (this.eventBus) {
       app.use('/dashboard/api', require('./routes/sse')(routeOpts));
