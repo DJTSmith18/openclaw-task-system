@@ -133,7 +133,7 @@ CREATE TABLE escalation_rules (
                         CHECK (trigger_condition IN (
                             'timeout', 'blocked', 'after_hours', 'priority_urgent',
                             'permission_required', 'deadline_approaching',
-                            'deadline_missed'
+                            'deadline_missed', 'unacknowledged'
                         )),
     task_category       TEXT,
     from_agent          TEXT,
