@@ -203,11 +203,14 @@ module.exports = function ({ db, eventBus }) {
         updateData.escalation_level = 0;
 
         // Expire old escalation records so max_escalations resets for next block cycle
-        await db.query(
+        const { rowCount } = await db.query(
           `UPDATE escalation_history SET status = 'expired'
            WHERE task_id = $1 AND status = 'pending'`,
           [task.id]
         );
+        if (rowCount > 0 && eventBus) {
+          eventBus.emit('escalation', { action: 'expired', id: task.id, summary: `${rowCount} escalation(s) expired on unblock` });
+        }
       }
 
       const rows = await db.update('tasks', updateData, 'id = $1', [req.params.id]);
