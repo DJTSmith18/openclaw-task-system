@@ -32,7 +32,7 @@ while [[ $# -gt 0 ]]; do
     --help|-h)
       echo "Usage: remote-install.sh [options]"
       echo "  --branch,      -b   Git branch/tag to download (default: main)"
-      echo "  --dir,         -d   Plugin install directory (default: <openclaw-base>/extensions/openclaw-task-system)"
+      echo "  --dir,         -d   Plugin install directory (default: <openclaw-base>/extensions/task-system)"
       echo "  --upgrade,     -u   Pull latest code, update deps, rebuild UI, run migrations; skip config prompts"
       echo "  --reconfigure, -r   Force full interactive reconfiguration on an existing install"
       exit 0
@@ -98,9 +98,10 @@ fi
 echo
 
 # Derive CONFIG_FILE and PLUGIN_DIR from the confirmed base path.
-# --dir overrides the plugin destination; otherwise use <base>/extensions/openclaw-task-system.
+# --dir overrides the plugin destination; otherwise use <base>/extensions/task-system.
+# Directory name MUST match the plugin id in openclaw.plugin.json ("task-system").
 export CONFIG_FILE="$OPENCLAW_BASE/openclaw.json"
-PLUGIN_DIR="${CUSTOM_DIR:-$OPENCLAW_BASE/extensions/openclaw-task-system}"
+PLUGIN_DIR="${CUSTOM_DIR:-$OPENCLAW_BASE/extensions/task-system}"
 
 # ── Detect whether this is an existing install ────────────────────────────────
 already_configured() {
@@ -112,6 +113,27 @@ already_configured() {
 IS_UPGRADE=false
 if [[ -f "$PLUGIN_DIR/package.json" ]] && already_configured; then
   IS_UPGRADE=true
+fi
+
+# Migrate from old directory name (openclaw-task-system → task-system)
+OLD_PLUGIN_DIR="$OPENCLAW_BASE/extensions/openclaw-task-system"
+if [[ "$IS_UPGRADE" == false && -f "$OLD_PLUGIN_DIR/package.json" ]] && already_configured; then
+  yellow "Found existing install at old path: $OLD_PLUGIN_DIR"
+  yellow "The plugin directory should match the manifest id (task-system)."
+  cyan "Moving $OLD_PLUGIN_DIR → $PLUGIN_DIR"
+  mv "$OLD_PLUGIN_DIR" "$PLUGIN_DIR"
+
+  # Update the load path in openclaw.json
+  if command -v jq &>/dev/null; then
+    _tmp=$(mktemp)
+    jq --arg old "$OLD_PLUGIN_DIR" --arg new "$PLUGIN_DIR" '
+      .plugins.load.paths |= map(if . == $old then $new else . end)
+    ' "$CONFIG_FILE" > "$_tmp" && mv "$_tmp" "$CONFIG_FILE"
+    green "Updated load path in openclaw.json"
+  fi
+
+  IS_UPGRADE=true
+  green "Migrated to new directory"
 fi
 
 # --reconfigure overrides --upgrade and auto-detect
