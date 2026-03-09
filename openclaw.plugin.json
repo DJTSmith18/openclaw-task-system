@@ -2,7 +2,7 @@
   "id": "task-system",
   "name": "Task Orchestration System",
   "description": "Centralized task management, agent coordination, escalation, universal webhook-to-task automation, and a full web dashboard.",
-  "version": "1.0.30",
+  "version": "1.0.31",
   "kind": "tool",
   "configSchema": {
     "type": "object",
@@ -152,6 +152,10 @@
           "human_escalation_target": {
             "type": "string",
             "description": "Recipient identifier (phone number, chat ID, etc.)"
+          },
+          "human_escalation_session": {
+            "type": "string",
+            "description": "Deprecated — ignored. Use human_escalation_channel instead."
           }
         }
       },
