@@ -21,6 +21,7 @@ BRANCH="main"
 CUSTOM_DIR=""            # set by --dir; empty means "derive from openclaw base"
 FORCE_UPGRADE=false      # skip prompts, just pull + npm install + build + migrate
 FORCE_RECONFIGURE=false  # run full install.sh even on existing install
+DEPLOY_AGENT_FILES=false # only deploy agent workspace files when explicitly requested
 
 # ── Parse args ────────────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
@@ -29,12 +30,14 @@ while [[ $# -gt 0 ]]; do
     --dir|-d)         CUSTOM_DIR="$2"; shift 2 ;;
     --upgrade|-u)     FORCE_UPGRADE=true; shift ;;
     --reconfigure|-r) FORCE_RECONFIGURE=true; shift ;;
+    --deploy-agent-files) DEPLOY_AGENT_FILES=true; shift ;;
     --help|-h)
       echo "Usage: remote-install.sh [options]"
       echo "  --branch,      -b   Git branch/tag to download (default: main)"
       echo "  --dir,         -d   Plugin install directory (default: <openclaw-base>/extensions/task-system)"
       echo "  --upgrade,     -u   Pull latest code, update deps, rebuild UI, run migrations; skip config prompts"
       echo "  --reconfigure, -r   Force full interactive reconfiguration on an existing install"
+      echo "  --deploy-agent-files Overwrite scheduler agent workspace files (ROLES.md, TOOLS.md, etc.)"
       exit 0
       ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
@@ -233,27 +236,34 @@ if [[ "$IS_UPGRADE" == true ]]; then
   fi
 
   # ── Deploy agent files to scheduler workspace ────────────────────────────
-  SCHEDULER_AGENT=$(jq -r '.plugins.entries["task-system"].config.scheduler.agentId // empty' "$CONFIG_FILE" 2>/dev/null || true)
-  if [[ -n "$SCHEDULER_AGENT" ]]; then
-    AGENT_WORKSPACE="$OPENCLAW_BASE/workspace-${SCHEDULER_AGENT}"
-    if [[ -d "$AGENT_WORKSPACE" ]]; then
-      cyan "Updating scheduler agent files in workspace-${SCHEDULER_AGENT}..."
-      for FILE in AGENTS.md SOUL.md IDENTITY.md ROLES.md TOOLS.md WORKER_RULES.md; do
-        SRC="$PLUGIN_DIR/agent-files/$FILE"
-        DST="$AGENT_WORKSPACE/$FILE"
-        if [[ -f "$SRC" ]]; then
-          if [[ -f "$DST" ]]; then
-            BACKUP="${DST}.bak.$(date +%s)"
-            cp "$DST" "$BACKUP"
+  # Only deploy when explicitly requested with --deploy-agent-files.
+  # Agent workspace files are customized per-install and should not be
+  # overwritten on routine upgrades.
+  if [[ "$DEPLOY_AGENT_FILES" == true ]]; then
+    SCHEDULER_AGENT=$(jq -r '.plugins.entries["task-system"].config.scheduler.agentId // empty' "$CONFIG_FILE" 2>/dev/null || true)
+    if [[ -n "$SCHEDULER_AGENT" ]]; then
+      AGENT_WORKSPACE="$OPENCLAW_BASE/workspace-${SCHEDULER_AGENT}"
+      if [[ -d "$AGENT_WORKSPACE" ]]; then
+        cyan "Updating scheduler agent files in workspace-${SCHEDULER_AGENT}..."
+        for FILE in AGENTS.md SOUL.md IDENTITY.md ROLES.md TOOLS.md WORKER_RULES.md; do
+          SRC="$PLUGIN_DIR/agent-files/$FILE"
+          DST="$AGENT_WORKSPACE/$FILE"
+          if [[ -f "$SRC" ]]; then
+            if [[ -f "$DST" ]]; then
+              BACKUP="${DST}.bak.$(date +%s)"
+              cp "$DST" "$BACKUP"
+            fi
+            cp "$SRC" "$DST"
           fi
-          cp "$SRC" "$DST"
-        fi
-      done
-      mkdir -p "$AGENT_WORKSPACE/memory"
-      green "Agent files updated"
-    else
-      yellow "Scheduler workspace not found at $AGENT_WORKSPACE — skipping agent file deploy"
+        done
+        mkdir -p "$AGENT_WORKSPACE/memory"
+        green "Agent files updated"
+      else
+        yellow "Scheduler workspace not found at $AGENT_WORKSPACE — skipping agent file deploy"
+      fi
     fi
+  else
+    yellow "Skipping agent workspace file deploy (use --deploy-agent-files to update)"
   fi
 
   echo
