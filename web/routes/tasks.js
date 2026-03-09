@@ -194,12 +194,20 @@ module.exports = function ({ db, eventBus }) {
       }
 
       const updateData = { status: finalStatus };
-      // Reset dispatch tracking on unblock so agent gets re-notified
+      // Reset dispatch tracking, escalation state, and expire old escalation records on unblock
       if (finalStatus === 'unblocked') {
         const meta = task.metadata || {};
         delete meta.dispatched_at;
         delete meta.dispatch_count;
         updateData.metadata = JSON.stringify(meta);
+        updateData.escalation_level = 0;
+
+        // Expire old escalation records so max_escalations resets for next block cycle
+        await db.query(
+          `UPDATE escalation_history SET status = 'expired'
+           WHERE task_id = $1 AND status = 'pending'`,
+          [task.id]
+        );
       }
 
       const rows = await db.update('tasks', updateData, 'id = $1', [req.params.id]);
