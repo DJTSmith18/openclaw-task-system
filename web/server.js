@@ -79,10 +79,24 @@ class WebServer {
 
     // ── Static files (built React app) ──────────────────────────────────────
     const uiDist = path.join(__dirname, 'ui', 'dist');
-    app.use('/dashboard', express.static(uiDist));
+    // Hashed assets (*.js, *.css) get long cache; index.html never cached
+    app.use('/dashboard/assets', express.static(path.join(uiDist, 'assets'), {
+      maxAge: '30d',
+      immutable: true,
+    }));
+    app.use('/dashboard', express.static(uiDist, {
+      etag: false,
+      maxAge: 0,
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        }
+      },
+    }));
     // SPA fallback — serve index.html for any /dashboard/* route
     app.get('/dashboard/*', (req, res) => {
       if (!req.path.startsWith('/dashboard/api') && !req.path.startsWith('/dashboard/webhooks')) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
         res.sendFile(path.join(uiDist, 'index.html'));
       } else {
         res.status(404).json({ error: 'Not found' });

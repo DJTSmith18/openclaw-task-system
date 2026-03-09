@@ -189,6 +189,7 @@ if [[ "$IS_UPGRADE" == true ]]; then
   UI_DIR="$PLUGIN_DIR/web/ui"
   if [[ -d "$UI_DIR" ]]; then
     cyan "Rebuilding Web UI..."
+    rm -rf "$UI_DIR/dist"
     (cd "$UI_DIR" && npm install --silent 2>&1 | tail -1 || true)
     (cd "$UI_DIR" && npm run build 2>&1 | tail -3) || { red "Web UI build failed"; exit 1; }
     green "Web UI rebuilt ($(du -sh "$UI_DIR/dist/" 2>/dev/null | cut -f1) compressed)"
