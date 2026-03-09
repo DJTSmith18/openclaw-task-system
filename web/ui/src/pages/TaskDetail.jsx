@@ -192,7 +192,7 @@ export default function TaskDetail() {
           {(() => {
             const entries = [];
             // Work logs
-            for (const w of (logsData?.worklogs || [])) {
+            for (const w of (logsData?.work_logs || [])) {
               entries.push({ type: 'log', ts: new Date(w.created_at), data: w });
             }
             // Comments
