@@ -111,6 +111,7 @@ CREATE TABLE agent_availability (
     current_task_id         INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
     max_concurrent_tasks    INTEGER NOT NULL DEFAULT 1,
     capabilities            TEXT[] DEFAULT '{}',
+    reports_to              TEXT,              -- agent hierarchy: who this agent escalates to
     metadata                JSONB DEFAULT '{}',
     created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()

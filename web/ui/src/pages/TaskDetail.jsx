@@ -153,7 +153,7 @@ export default function TaskDetail() {
         <div className="card section">
           <div className="section-title">Change Status</div>
           <div className="form-group">
-            <input placeholder="Note (optional)" value={statusNote} onChange={e => setStatusNote(e.target.value)} />
+            <input placeholder={t.status === 'blocked' ? 'Note (required for unblock)' : 'Note (required for blocked)'} value={statusNote} onChange={e => setStatusNote(e.target.value)} />
           </div>
           <div className="btn-group" style={{flexWrap:'wrap'}}>
             {STATUSES.filter(s => s !== t.status).map(s => (
@@ -185,52 +185,78 @@ export default function TaskDetail() {
         </div>
       )}
 
-      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginTop:20}}>
-        {/* Comments */}
-        <div className="card section">
-          <div className="section-title">Comments</div>
-          <div className="timeline" style={{marginBottom:16}}>
-            {(commentsData?.comments || []).map(c => (
-              <div key={c.id} className="timeline-item">
-                <div className="timeline-dot" style={{background: c.author_type === 'human' ? 'var(--green)' : c.author_type === 'system' ? 'var(--yellow)' : 'var(--accent)'}} />
-                <div className="timeline-content">
-                  <div className="flex-between">
-                    <span className="timeline-agent">{c.author} <span className="tag">{c.author_type}</span></span>
-                    <span className="timeline-time">{timeAgo(c.created_at)}</span>
+      {/* Unified Activity Timeline */}
+      <div className="card section mt-16">
+        <div className="section-title">Activity Timeline</div>
+        <div className="timeline" style={{marginBottom:16}}>
+          {(() => {
+            const entries = [];
+            // Work logs
+            for (const w of (logsData?.worklogs || [])) {
+              entries.push({ type: 'log', ts: new Date(w.created_at), data: w });
+            }
+            // Comments
+            for (const c of (commentsData?.comments || [])) {
+              entries.push({ type: 'comment', ts: new Date(c.created_at), data: c });
+            }
+            // Sort oldest-first (reading order)
+            entries.sort((a, b) => a.ts - b.ts);
+
+            if (entries.length === 0) return <div className="empty" style={{padding:16}}>No activity yet</div>;
+
+            const DOT_COLORS = {
+              status_change: 'var(--green)',
+              escalation: 'var(--yellow)',
+              assignment: 'var(--text-muted)',
+              priority_change: 'var(--text-muted)',
+              time_log: 'var(--text-muted)',
+              comment: 'var(--accent)',
+            };
+
+            return entries.map((e, i) => {
+              if (e.type === 'comment') {
+                const c = e.data;
+                return (
+                  <div key={`c-${c.id}`} className="timeline-item">
+                    <div className="timeline-dot" style={{background: DOT_COLORS.comment}} />
+                    <div className="timeline-content">
+                      <div className="flex-between">
+                        <span className="timeline-agent">{c.author} <span className="tag">{c.author_type}</span> <span className="badge" style={{marginLeft:4}}>comment</span></span>
+                        <span className="timeline-time" title={e.ts.toLocaleString()}>{timeAgo(c.created_at)}</span>
+                      </div>
+                      <div className="timeline-note" style={{whiteSpace:'pre-wrap', marginTop:4}}>{c.content}</div>
+                    </div>
                   </div>
-                  <div className="timeline-note" style={{whiteSpace:'pre-wrap'}}>{c.content}</div>
+                );
+              }
+              // Work log entry
+              const w = e.data;
+              const dotColor = DOT_COLORS[w.action] || 'var(--text-muted)';
+              return (
+                <div key={`w-${w.id}`} className="timeline-item">
+                  <div className="timeline-dot" style={{background: dotColor}} />
+                  <div className="timeline-content">
+                    <div className="flex-between">
+                      <span className="timeline-agent">{w.agent_id}</span>
+                      <span className="timeline-time" title={e.ts.toLocaleString()}>{timeAgo(w.created_at)}</span>
+                    </div>
+                    <div className="timeline-note">
+                      <span className="badge">{w.action.replace('_', ' ')}</span>
+                      {w.status_from && <span style={{marginLeft:6,fontSize:12}}>{w.status_from} → {w.status_to}</span>}
+                      {w.time_spent_minutes > 0 && <span className="tag" style={{marginLeft:6}}>{w.time_spent_minutes}m</span>}
+                      {w.notes && <div style={{marginTop:4,color:'var(--text-dim)',whiteSpace:'pre-wrap'}}>{w.notes}</div>}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
-            {!(commentsData?.comments?.length) && <div className="empty" style={{padding:16}}>No comments</div>}
-          </div>
-          <div className="form-group"><textarea rows={2} placeholder="Add a comment..." value={newComment} onChange={e => setNewComment(e.target.value)} /></div>
-          <button className="btn btn-sm btn-primary" onClick={addComment} disabled={!newComment.trim()}>Add Comment</button>
+              );
+            });
+          })()}
         </div>
 
-        {/* Work Log */}
-        <div className="card section">
-          <div className="section-title">Activity Log</div>
-          <div className="timeline">
-            {(logsData?.worklogs || []).map(w => (
-              <div key={w.id} className="timeline-item">
-                <div className="timeline-dot" />
-                <div className="timeline-content">
-                  <div className="flex-between">
-                    <span className="timeline-agent">{w.agent_id}</span>
-                    <span className="timeline-time">{timeAgo(w.created_at)}</span>
-                  </div>
-                  <div className="timeline-note">
-                    <span className="badge">{w.action}</span>
-                    {w.status_from && <span style={{marginLeft:6,fontSize:12}}>{w.status_from} → {w.status_to}</span>}
-                    {w.time_spent_minutes > 0 && <span className="tag" style={{marginLeft:6}}>{w.time_spent_minutes}m</span>}
-                    {w.notes && <div style={{marginTop:4,color:'var(--text-dim)'}}>{w.notes}</div>}
-                  </div>
-                </div>
-              </div>
-            ))}
-            {!(logsData?.worklogs?.length) && <div className="empty" style={{padding:16}}>No activity</div>}
-          </div>
+        {/* Comment form at bottom of timeline */}
+        <div style={{borderTop:'1px solid var(--border)', paddingTop:12}}>
+          <div className="form-group"><textarea rows={2} placeholder="Add a comment..." value={newComment} onChange={e => setNewComment(e.target.value)} /></div>
+          <button className="btn btn-sm btn-primary" onClick={addComment} disabled={!newComment.trim()}>Add Comment</button>
         </div>
       </div>
     </div>

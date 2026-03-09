@@ -12,7 +12,7 @@ function timeAgo(ts) {
   return `${Math.floor(s / 86400)}d ago`;
 }
 
-function AgentModal({ agent, onClose, onSaved }) {
+function AgentModal({ agent, onClose, onSaved, allAgentIds }) {
   const isNew = !agent;
   const [form, setForm] = useState({
     agent_id: agent?.agent_id || '',
@@ -24,6 +24,7 @@ function AgentModal({ agent, onClose, onSaved }) {
     after_hours_capable: agent?.after_hours_capable || false,
     max_concurrent_tasks: agent?.max_concurrent_tasks || 5,
     capabilities: (agent?.capabilities || []).join(', '),
+    reports_to: agent?.reports_to || '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -43,6 +44,7 @@ function AgentModal({ agent, onClose, onSaved }) {
         after_hours_capable: form.after_hours_capable,
         max_concurrent_tasks: parseInt(form.max_concurrent_tasks),
         capabilities: form.capabilities ? form.capabilities.split(',').map(s => s.trim()).filter(Boolean) : [],
+        reports_to: form.reports_to || null,
       };
       await api.put(`/agents/${agentId}`, body);
       onSaved();
@@ -76,6 +78,16 @@ function AgentModal({ agent, onClose, onSaved }) {
           </div>
         </div>
         <div className="form-group"><label>Capabilities (comma-separated)</label><input value={form.capabilities} onChange={e => set('capabilities', e.target.value)} placeholder="dispatch, billing, scheduling" /></div>
+        <div className="form-group">
+          <label>Reports To (hierarchy)</label>
+          <select value={form.reports_to} onChange={e => set('reports_to', e.target.value)}>
+            <option value="">— None —</option>
+            <option value="human">human (top level)</option>
+            {(allAgentIds || []).filter(id => id !== form.agent_id && id !== agent?.agent_id).map(id => (
+              <option key={id} value={id}>{id}</option>
+            ))}
+          </select>
+        </div>
         <div className="modal-actions">
           <button onClick={onClose}>Cancel</button>
           <button className="btn-primary" onClick={save} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
@@ -125,6 +137,7 @@ export default function Agents() {
               <div>TZ: {a.timezone || '—'}</div>
               <div>Last seen: {timeAgo(a.last_heartbeat)}</div>
               <div>{a.after_hours_capable ? '24/7 capable' : 'Business hours'}</div>
+              <div style={{gridColumn:'1/-1'}}>Reports to: <strong style={{color:'var(--text)'}}>{a.reports_to || '—'}</strong></div>
             </div>
             {a.capabilities?.length > 0 && (
               <div style={{marginTop:8}}>{a.capabilities.map(c => <span key={c} className="tag">{c}</span>)}</div>
@@ -134,8 +147,8 @@ export default function Agents() {
         {agents.length === 0 && <div className="empty" style={{gridColumn:'1/-1'}}>No agents registered yet. Click "+ Add Agent" to register your agents.</div>}
       </div>
 
-      {editAgent && <AgentModal agent={editAgent} onClose={() => setEditAgent(undefined)} onSaved={() => { setEditAgent(undefined); reload(); }} />}
-      {showAdd && <AgentModal agent={null} onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); reload(); }} />}
+      {editAgent && <AgentModal agent={editAgent} allAgentIds={agents.map(a => a.agent_id)} onClose={() => setEditAgent(undefined)} onSaved={() => { setEditAgent(undefined); reload(); }} />}
+      {showAdd && <AgentModal agent={null} allAgentIds={agents.map(a => a.agent_id)} onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); reload(); }} />}
     </div>
   );
 }

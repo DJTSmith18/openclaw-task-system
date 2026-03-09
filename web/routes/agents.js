@@ -45,7 +45,7 @@ module.exports = function ({ db, eventBus }) {
       const b = req.body;
       const fields = {};
       ['display_name', 'working_hours_start', 'working_hours_end', 'timezone',
-       'after_hours_capable', 'max_concurrent_tasks', 'current_status'
+       'after_hours_capable', 'max_concurrent_tasks', 'current_status', 'reports_to'
       ].forEach(k => { if (b[k] !== undefined) fields[k] = b[k]; });
       if (b.working_days) fields.working_days = `{${b.working_days.join(',')}}`;
       if (b.capabilities) fields.capabilities = `{${b.capabilities.join(',')}}`;
