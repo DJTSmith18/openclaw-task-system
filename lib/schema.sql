@@ -25,7 +25,7 @@ CREATE TABLE tasks (
     title               TEXT NOT NULL,
     description         TEXT,
     status              TEXT NOT NULL DEFAULT 'todo'
-                        CHECK (status IN ('todo', 'in_progress', 'blocked', 'done', 'cancelled')),
+                        CHECK (status IN ('todo', 'in_progress', 'blocked', 'unblocked', 'done', 'cancelled')),
     priority            INTEGER NOT NULL DEFAULT 3
                         CHECK (priority BETWEEN 1 AND 4),
                         -- 1=urgent, 2=high, 3=normal, 4=low
@@ -50,7 +50,7 @@ CREATE TABLE tasks (
 
 CREATE INDEX idx_tasks_status ON tasks(status);
 CREATE INDEX idx_tasks_assigned ON tasks(assigned_to_agent, status);
-CREATE INDEX idx_tasks_deadline ON tasks(deadline) WHERE status IN ('todo', 'in_progress');
+CREATE INDEX idx_tasks_deadline ON tasks(deadline) WHERE status IN ('todo', 'in_progress', 'unblocked');
 CREATE INDEX idx_tasks_external ON tasks(external_ref_type, external_ref_id);
 CREATE INDEX idx_tasks_priority ON tasks(priority, status);
 CREATE INDEX idx_tasks_category ON tasks(category, status);

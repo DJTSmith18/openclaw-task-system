@@ -4,7 +4,7 @@ import { useApi } from '../hooks/useApi';
 import { useSSE } from '../hooks/useSSE';
 
 const PRIORITY_LABELS = { 1: 'Urgent', 2: 'High', 3: 'Normal', 4: 'Low' };
-const STATUS_ORDER = ['todo', 'in_progress', 'blocked', 'done', 'cancelled'];
+const STATUS_ORDER = ['todo', 'in_progress', 'unblocked', 'blocked', 'done', 'cancelled'];
 
 function StatusCard({ label, count, color }) {
   return (
@@ -34,7 +34,7 @@ export default function Dashboard() {
   const d = data;
   const statusMap = {};
   (d.tasks?.by_status || []).forEach(r => { statusMap[r.status] = parseInt(r.count); });
-  const totalActive = (statusMap.todo || 0) + (statusMap.in_progress || 0) + (statusMap.blocked || 0);
+  const totalActive = (statusMap.todo || 0) + (statusMap.in_progress || 0) + (statusMap.blocked || 0) + (statusMap.unblocked || 0);
 
   return (
     <div>

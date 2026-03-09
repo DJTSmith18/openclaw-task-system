@@ -39,10 +39,10 @@ module.exports = function ({ db, eventBus }) {
         `SELECT priority, COUNT(*) AS count FROM tasks WHERE status NOT IN ('done','cancelled') GROUP BY priority`
       );
       const overdue = await db.getCount(
-        `SELECT COUNT(*) AS count FROM tasks WHERE deadline < NOW() AND status IN ('todo','in_progress','blocked')`
+        `SELECT COUNT(*) AS count FROM tasks WHERE deadline < NOW() AND status IN ('todo','in_progress','blocked','unblocked')`
       );
       const unassigned = await db.getCount(
-        `SELECT COUNT(*) AS count FROM tasks WHERE assigned_to_agent IS NULL AND status IN ('todo','in_progress')`
+        `SELECT COUNT(*) AS count FROM tasks WHERE assigned_to_agent IS NULL AND status IN ('todo','in_progress','unblocked')`
       );
       res.json({ by_status: byStatus, by_priority: byPriority, overdue, unassigned });
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -127,7 +127,7 @@ module.exports = function ({ db, eventBus }) {
         oldTask = await db.getOne('SELECT * FROM tasks WHERE id = $1', [req.params.id]);
         if (oldTask && fields.assigned_to_agent !== oldTask.assigned_to_agent) {
           fields.assigned_at = new Date().toISOString();
-          if (oldTask.status === 'in_progress' || oldTask.status === 'blocked') {
+          if (oldTask.status === 'in_progress' || oldTask.status === 'blocked' || oldTask.status === 'unblocked') {
             fields.status = 'todo';
           }
         }
@@ -178,10 +178,34 @@ module.exports = function ({ db, eventBus }) {
       if (!status) return res.status(400).json({ error: 'status required' });
       const task = await db.getOne('SELECT * FROM tasks WHERE id = $1', [req.params.id]);
       if (!task) return res.status(404).json({ error: 'Task not found' });
-      const rows = await db.update('tasks', { status }, 'id = $1', [req.params.id]);
+
+      // Mandatory notes for block/unblock
+      if (status === 'blocked' && (!note || !note.trim())) {
+        return res.status(400).json({ error: 'A note is required when blocking a task. Explain what you need, from whom, and what you tried.' });
+      }
+      if (task.status === 'blocked' && status !== 'blocked' && (!note || !note.trim())) {
+        return res.status(400).json({ error: 'A note is required when unblocking a task. Explain how the blocker was resolved.' });
+      }
+
+      // Force blocked → unblocked transition (unless done/cancelled)
+      let finalStatus = status;
+      if (task.status === 'blocked' && status !== 'blocked' && status !== 'done' && status !== 'cancelled') {
+        finalStatus = 'unblocked';
+      }
+
+      const updateData = { status: finalStatus };
+      // Reset dispatch tracking on unblock so agent gets re-notified
+      if (finalStatus === 'unblocked') {
+        const meta = task.metadata || {};
+        delete meta.dispatched_at;
+        delete meta.dispatch_count;
+        updateData.metadata = JSON.stringify(meta);
+      }
+
+      const rows = await db.update('tasks', updateData, 'id = $1', [req.params.id]);
       await db.insert('work_logs', {
         task_id: task.id, agent_id: 'human', action: 'status_change',
-        status_from: task.status, status_to: status, notes: note || 'Status changed via Web UI',
+        status_from: task.status, status_to: finalStatus, notes: note || 'Status changed via Web UI',
       });
       if (eventBus) eventBus.emit('task', { action: 'status_changed', id: task.id });
       res.json(rows[0]);

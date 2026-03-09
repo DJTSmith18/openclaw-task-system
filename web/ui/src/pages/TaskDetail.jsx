@@ -4,7 +4,7 @@ import { useApi } from '../hooks/useApi';
 import { useSSE } from '../hooks/useSSE';
 import { api } from '../api';
 
-const STATUSES = ['todo', 'in_progress', 'blocked', 'done', 'cancelled'];
+const STATUSES = ['todo', 'in_progress', 'unblocked', 'blocked', 'done', 'cancelled'];
 const PRIORITY_LABELS = { 1: 'Urgent', 2: 'High', 3: 'Normal', 4: 'Low' };
 
 function timeAgo(ts) {
@@ -58,6 +58,15 @@ export default function TaskDetail() {
   }
 
   async function changeStatus(newStatus) {
+    // Require note for block and unblock transitions
+    const isBlocking = newStatus === 'blocked';
+    const isUnblocking = t.status === 'blocked' && newStatus !== 'blocked';
+    if ((isBlocking || isUnblocking) && !statusNote.trim()) {
+      alert(isBlocking
+        ? 'A note is required when blocking. Explain what you need, from whom, and what you tried.'
+        : 'A note is required when unblocking. Explain how the blocker was resolved.');
+      return;
+    }
     try {
       await api.patch(`/tasks/${id}/status`, { status: newStatus, note: statusNote || `Changed to ${newStatus}` });
       setStatusNote('');
@@ -153,14 +162,30 @@ export default function TaskDetail() {
         <div className="card section">
           <div className="section-title">Change Status</div>
           <div className="form-group">
-            <input placeholder={t.status === 'blocked' ? 'Note (required for unblock)' : 'Note (required for blocked)'} value={statusNote} onChange={e => setStatusNote(e.target.value)} />
+            <input placeholder={t.status === 'blocked' ? 'Note REQUIRED: explain how blocker was resolved' : 'Note (REQUIRED for block/unblock)'} value={statusNote} onChange={e => setStatusNote(e.target.value)} />
           </div>
           <div className="btn-group" style={{flexWrap:'wrap'}}>
-            {STATUSES.filter(s => s !== t.status).map(s => (
-              <button key={s} className={`btn btn-sm ${s === 'done' ? 'btn-success' : s === 'cancelled' ? 'btn-danger' : ''}`} onClick={() => changeStatus(s)}>
-                {s.replace('_', ' ')}
-              </button>
-            ))}
+            {(() => {
+              // Build valid transitions based on current status
+              let options = STATUSES.filter(s => s !== t.status && s !== 'unblocked');
+              if (t.status === 'blocked') {
+                // Blocked: show Unblock (→unblocked), Done, Cancelled
+                return [
+                  <button key="unblock" className="btn btn-sm" onClick={() => changeStatus('todo')} style={{borderColor:'var(--yellow)',color:'var(--yellow)'}}>unblock</button>,
+                  <button key="done" className="btn btn-sm btn-success" onClick={() => changeStatus('done')}>done</button>,
+                  <button key="cancelled" className="btn btn-sm btn-danger" onClick={() => changeStatus('cancelled')}>cancelled</button>,
+                ];
+              }
+              if (t.status === 'unblocked') {
+                // Unblocked: show In Progress, Blocked, Done, Cancelled
+                options = ['in_progress', 'blocked', 'done', 'cancelled'];
+              }
+              return options.map(s => (
+                <button key={s} className={`btn btn-sm ${s === 'done' ? 'btn-success' : s === 'cancelled' ? 'btn-danger' : ''}`} onClick={() => changeStatus(s)}>
+                  {s.replace('_', ' ')}
+                </button>
+              ));
+            })()}
           </div>
         </div>
 
