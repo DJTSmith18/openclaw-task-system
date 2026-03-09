@@ -20,6 +20,7 @@ const TABS = [
   { id: 'scheduler',   label: 'Scheduler' },
   { id: 'dispatcher',  label: 'Dispatcher' },
   { id: 'escalation',  label: 'Escalation' },
+  { id: 'debug',       label: 'Debug' },
   { id: 'database',    label: 'Database' },
   { id: 'webui',       label: 'Web UI' },
   { id: 'permissions', label: 'Permissions' },
@@ -199,6 +200,23 @@ function EscalationTab({ settings, onUpdate, onSave, onReset, dirty, saving, msg
       <NumField label="Default Max Escalations" value={s.default_max_escalations || 3} onChange={v => onUpdate('escalation', 'default_max_escalations', v)}
         desc="Default maximum number of times a single task can be escalated by the same rule" />
       <SectionSaveBar dirty={dirty} saving={saving} onSave={() => onSave('escalation')} onReset={() => onReset('escalation')} msg={msg} />
+    </div>
+  );
+}
+
+// ── Tab: Debug ────────────────────────────────────────────────────────────────
+
+function DebugTab({ settings, onUpdate, onSave, onReset, dirty, saving, msg }) {
+  const s = settings.debug || {};
+  return (
+    <div className="card section">
+      <div className="section-title">Debug Settings</div>
+      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
+        Runtime debug flags. Changes take effect immediately without restart.
+      </p>
+      <BoolField label="Scheduler Diagnostics" value={s.scheduler_diagnostics || false} onChange={v => onUpdate('debug', 'scheduler_diagnostics', v)}
+        desc="When enabled, the scheduler_run_cycle tool returns detailed diagnostics including raw query results, escalation rule evaluations, and dispatch decisions. Useful for troubleshooting escalation and dispatch issues." />
+      <SectionSaveBar dirty={dirty} saving={saving} onSave={() => onSave('debug')} onReset={() => onReset('debug')} msg={msg} />
     </div>
   );
 }
@@ -730,6 +748,7 @@ export default function Settings() {
           {activeTab === 'scheduler' && <SchedulerTab {...tabProps('scheduler')} />}
           {activeTab === 'dispatcher' && <DispatcherTab {...tabProps('dispatcher')} />}
           {activeTab === 'escalation' && <EscalationTab {...tabProps('escalation')} />}
+          {activeTab === 'debug' && <DebugTab {...tabProps('debug')} />}
           {activeTab === 'database' && <DatabaseTab {...tabProps('database')} configData={configData} />}
           {activeTab === 'webui' && <WebUITab {...tabProps('webUI')} />}
           {activeTab === 'permissions' && <PermissionsTab permsData={permsData} reloadPerms={reloadPerms} />}
