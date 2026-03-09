@@ -132,19 +132,33 @@ if [[ "$FORCE_UPGRADE" == true ]]; then
   IS_UPGRADE=true
 fi
 
-# ── Download plugin (curl tarball — no git required) ─────────────────────────
-TARBALL_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/archive/refs/heads/${BRANCH}.tar.gz"
-cyan "Downloading plugin from: $TARBALL_URL"
+# ── Download plugin ───────────────────────────────────────────────────────────
 mkdir -p "$PLUGIN_DIR"
-
 _tmp_tar=$(mktemp /tmp/openclaw-task-system-XXXXXX.tar.gz)
-cyan "Saving tarball to: $_tmp_tar"
-curl -fsSL --progress-bar -H "Cache-Control: no-cache" "$TARBALL_URL?_=$(date +%s)" -o "$_tmp_tar"
+
+# Resolve branch to exact commit SHA to bypass GitHub's CDN cache.
+# Branch tarballs are aggressively cached; commit tarballs are immutable.
+_commit_sha=""
+if command -v jq &>/dev/null; then
+  cyan "Resolving branch '$BRANCH' to commit SHA..."
+  _commit_sha=$(curl -fsSL "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/commits/${BRANCH}" 2>/dev/null | jq -r '.sha // empty' 2>/dev/null || true)
+fi
+
+if [[ -n "$_commit_sha" ]]; then
+  TARBALL_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/archive/${_commit_sha}.tar.gz"
+  green "Resolved to commit ${_commit_sha:0:12}"
+else
+  yellow "Could not resolve commit SHA — falling back to branch tarball"
+  TARBALL_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/archive/refs/heads/${BRANCH}.tar.gz"
+fi
+
+cyan "Downloading: $TARBALL_URL"
+curl -fsSL --progress-bar -H "Cache-Control: no-cache" "$TARBALL_URL" -o "$_tmp_tar"
 _tar_size=$(du -sh "$_tmp_tar" 2>/dev/null | cut -f1)
 green "Download complete ($_tar_size)"
 
 cyan "Extracting to: $PLUGIN_DIR"
-tar -xzv --strip-components=1 -C "$PLUGIN_DIR" -f "$_tmp_tar" 2>&1 | tail -20
+tar -xzf "$_tmp_tar" --strip-components=1 -C "$PLUGIN_DIR" 2>&1 | tail -5
 rm -f "$_tmp_tar"
 
 _file_count=$(find "$PLUGIN_DIR" -type f | wc -l | tr -d ' ')
