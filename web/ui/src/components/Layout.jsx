@@ -8,6 +8,7 @@ const NAV = [
   { to: '/escalations', icon: '⚡', label: 'Escalations' },
   { to: '/webhooks',    icon: '⇄', label: 'Webhooks' },
   { to: '/cron',        icon: '⏱', label: 'Cron Jobs' },
+  { to: '/memory',      icon: '◈', label: 'Memory' },
   { to: '/worklogs',    icon: '◷', label: 'Work Logs' },
   { to: '/settings',    icon: '⚙', label: 'Settings' },
 ];

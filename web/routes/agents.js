@@ -49,6 +49,7 @@ module.exports = function ({ db, eventBus }) {
       ].forEach(k => { if (b[k] !== undefined) fields[k] = b[k]; });
       if (b.working_days) fields.working_days = `{${b.working_days.join(',')}}`;
       if (b.capabilities) fields.capabilities = `{${b.capabilities.join(',')}}`;
+      if (b.metadata !== undefined) fields.metadata = JSON.stringify(b.metadata);
 
       const existing = await db.getOne('SELECT * FROM agent_availability WHERE agent_id = $1', [req.params.id]);
       if (existing) {

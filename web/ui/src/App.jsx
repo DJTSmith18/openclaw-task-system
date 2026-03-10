@@ -9,6 +9,7 @@ import Agents from './pages/Agents';
 import Escalations from './pages/Escalations';
 import Webhooks from './pages/Webhooks';
 import CronJobs from './pages/CronJobs';
+import Memory from './pages/Memory';
 import WorkLogs from './pages/WorkLogs';
 import Settings from './pages/Settings';
 import { getToken, clearToken } from './api';
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="/escalations" element={<Escalations />} />
         <Route path="/webhooks" element={<Webhooks />} />
         <Route path="/cron" element={<CronJobs />} />
+        <Route path="/memory" element={<Memory />} />
         <Route path="/worklogs" element={<WorkLogs />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />

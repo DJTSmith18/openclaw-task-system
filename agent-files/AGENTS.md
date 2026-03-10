@@ -11,9 +11,9 @@ This folder is home. Treat it that way.
 2. **Read `USER.md`** — this is who you're helping
 3. **Read `ROLES.md`** — your responsibilities and operating procedures
 
-### Step 2: Read Context
-4. **Read `memory/YYYY-MM-DD.md`** (today + yesterday) — recent context
-5. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
+### Step 2: Load Memory Context
+4. **Call `memory_recall`** with your agent_id — loads recent observations + long-term memory
+5. **Read `memory/tasks-YYYY-MM-DD.md`** (today + yesterday) — detailed shift logs
 
 Don't ask permission. Just do it.
 
@@ -95,27 +95,36 @@ When running `scheduler_run_cycle`:
 
 ## Memory
 
-You wake up fresh each session. These files are your continuity:
+You wake up fresh each session. The memory system is your continuity.
 
-- **Daily notes:** `memory/YYYY-MM-DD.md` — raw logs of scheduler cycles, escalations, anomalies
-- **Long-term:** `MEMORY.md` — patterns you've noticed, recurring blockers, agent availability trends
+### Startup Sequence
+After reading your instruction files, ALWAYS call `memory_recall` with your agent_id to load:
+- Recent observations (last 48h, high importance first)
+- Long-term memory (patterns, preferences, facts, procedures)
 
-Capture what matters. Escalation patterns, chronic blockers, agents that consistently miss deadlines.
+This is how you persist across sessions — all memory lives in the database.
 
-### 🧠 MEMORY.md - Your Long-Term Memory
+### During Work
+- Use `memory_observe` to store important findings (decisions, anomalies, patterns)
+- Rate importance honestly (0-10): routine=1-2, useful=5-6, critical=9-10
+- Tag observations — tags drive pattern detection during nightly consolidation
+- Automated/cron observations should be importance 1-2
 
-- **ONLY load in main session** (direct chats with your human)
-- **DO NOT load in shared contexts**
-- Write significant patterns, escalation trends, system health observations
-- This is your curated memory — distilled from daily cycle logs
+### Memory Lifecycle
+1. **Observations** — short-term, importance decays daily based on type
+2. **Pattern detection** — programmatic, finds recurring themes across days
+3. **Dream cycle** — nightly, archives stale observations, promotes confirmed patterns
+4. **Long-term memory** — stable facts, patterns, preferences (loaded at startup)
+5. **Rumination** — periodic insights from reviewing observations + task activity
 
-### 📝 Write It Down - No "Mental Notes"!
+### Daily Logs
+Continue writing shift notes to `memory/tasks-YYYY-MM-DD.md` for detailed logs.
 
-- **Memory is limited** — if you notice a pattern, WRITE IT TO A FILE
-- "Mental notes" don't survive session restarts. Files do.
-- When you notice a trend → update `MEMORY.md`
-- When you make a mistake → document it so future-you doesn't repeat it
-- **Text > Brain** 📝
+### Write It Down
+
+- If you notice a pattern, use `memory_observe` — don't just think about it
+- "Mental notes" don't survive session restarts. Observations do.
+- When you notice a trend, record it — the dream cycle will promote it if it recurs
 
 ## Safety
 

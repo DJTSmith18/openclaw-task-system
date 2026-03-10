@@ -12,6 +12,184 @@ function timeAgo(ts) {
   return `${Math.floor(s / 86400)}d ago`;
 }
 
+const DEFAULT_SWEEP_TOOLS = [
+  { tool: 'task_query', params: { status: 'blocked' }, label: 'Blocked tasks' },
+  { tool: 'task_query', params: { deadline_within_hours: 4 }, label: 'Approaching deadlines' },
+  { tool: 'agent_query', params: {}, label: 'Agent availability' },
+  { tool: 'escalation_query', params: { status: 'pending' }, label: 'Pending escalations' },
+];
+
+function MemoryConfigPanel({ mem, setMem }) {
+  const enabled = mem.enabled || false;
+  const dream = mem.dream || {};
+  const rum = mem.rumination || {};
+  const sweep = mem.sensor_sweep || {};
+  const sweepTools = sweep.tools || DEFAULT_SWEEP_TOOLS;
+
+  const update = (section, key, val) => {
+    setMem(prev => ({ ...prev, [section]: { ...prev[section], [key]: val } }));
+  };
+  const updateTool = (idx, field, val) => {
+    const newTools = [...sweepTools];
+    if (field === 'params') {
+      try { newTools[idx] = { ...newTools[idx], params: JSON.parse(val) }; } catch { return; }
+    } else {
+      newTools[idx] = { ...newTools[idx], [field]: val };
+    }
+    update('sensor_sweep', 'tools', newTools);
+  };
+
+  return (
+    <div style={{ borderTop: '1px solid var(--border)', marginTop: 16, paddingTop: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ fontSize: 14, fontWeight: 700 }}>Memory System</div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+          <input type="checkbox" checked={enabled} onChange={e => setMem(prev => ({ ...prev, enabled: e.target.checked }))}
+            style={{ width: 18, height: 18, accentColor: 'var(--accent)' }} />
+          {enabled ? 'Enabled' : 'Disabled'}
+        </label>
+      </div>
+
+      {enabled && (
+        <div style={{ display: 'grid', gap: 16 }}>
+          {/* Dream Cycle */}
+          <div style={{ background: 'var(--bg-secondary)', borderRadius: 8, padding: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>Dream Cycle</span>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12 }}>
+                <input type="checkbox" checked={dream.enabled !== false} onChange={e => update('dream', 'enabled', e.target.checked)} />
+                {dream.enabled !== false ? 'On' : 'Off'}
+              </label>
+            </div>
+            {dream.enabled !== false && (
+              <div style={{ display: 'grid', gap: 6, fontSize: 12 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <label>Schedule</label>
+                    <input value={dream.schedule || '0 3 * * *'} onChange={e => update('dream', 'schedule', e.target.value)} style={{ fontSize: 12 }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label>Max Observations</label>
+                    <input type="number" value={dream.max_active_observations || 500} onChange={e => update('dream', 'max_active_observations', parseInt(e.target.value) || 500)} style={{ fontSize: 12 }} />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={dream.decay_enabled !== false} onChange={e => update('dream', 'decay_enabled', e.target.checked)} /> Decay
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={dream.archive_enabled !== false} onChange={e => update('dream', 'archive_enabled', e.target.checked)} /> Archive
+                  </label>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <label>Lookback (days)</label>
+                    <input type="number" value={dream.pattern_lookback_days || 7} onChange={e => update('dream', 'pattern_lookback_days', parseInt(e.target.value) || 7)} style={{ fontSize: 12 }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label>Min Occurrences</label>
+                    <input type="number" value={dream.pattern_min_occurrences || 3} onChange={e => update('dream', 'pattern_min_occurrences', parseInt(e.target.value) || 3)} style={{ fontSize: 12 }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label>Min Days</label>
+                    <input type="number" value={dream.pattern_min_unique_days || 3} onChange={e => update('dream', 'pattern_min_unique_days', parseInt(e.target.value) || 3)} style={{ fontSize: 12 }} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Rumination */}
+          <div style={{ background: 'var(--bg-secondary)', borderRadius: 8, padding: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>Rumination</span>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12 }}>
+                <input type="checkbox" checked={rum.enabled !== false} onChange={e => update('rumination', 'enabled', e.target.checked)} />
+                {rum.enabled !== false ? 'On' : 'Off'}
+              </label>
+            </div>
+            {rum.enabled !== false && (
+              <div style={{ display: 'grid', gap: 6, fontSize: 12 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <label>Schedule</label>
+                    <input value={rum.schedule || '0 */4 * * *'} onChange={e => update('rumination', 'schedule', e.target.value)} style={{ fontSize: 12 }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label>Escalation Threshold</label>
+                    <input type="number" step="0.5" value={rum.max_importance_for_escalation || 8.5} onChange={e => update('rumination', 'max_importance_for_escalation', parseFloat(e.target.value) || 8.5)} style={{ fontSize: 12 }} />
+                  </div>
+                </div>
+                <div>
+                  <label>Threads</label>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {['observation', 'reasoning', 'memory', 'planning'].map(t => {
+                      const threads = rum.threads || ['observation', 'reasoning', 'memory', 'planning'];
+                      return (
+                        <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+                          <input type="checkbox" checked={threads.includes(t)} onChange={e => {
+                            const next = e.target.checked ? [...threads, t] : threads.filter(x => x !== t);
+                            update('rumination', 'threads', next);
+                          }} />
+                          {t}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Sensor Sweep */}
+          <div style={{ background: 'var(--bg-secondary)', borderRadius: 8, padding: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>Sensor Sweep</span>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12 }}>
+                <input type="checkbox" checked={sweep.enabled !== false} onChange={e => update('sensor_sweep', 'enabled', e.target.checked)} />
+                {sweep.enabled !== false ? 'On' : 'Off'}
+              </label>
+            </div>
+            {sweep.enabled !== false && (
+              <div style={{ display: 'grid', gap: 6, fontSize: 12 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <label>Schedule</label>
+                    <input value={sweep.schedule || '0 */2 * * *'} onChange={e => update('sensor_sweep', 'schedule', e.target.value)} style={{ fontSize: 12 }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label>Timeout (sec)</label>
+                    <input type="number" value={sweep.timeout_seconds || 120} onChange={e => update('sensor_sweep', 'timeout_seconds', parseInt(e.target.value) || 120)} style={{ fontSize: 12 }} />
+                  </div>
+                </div>
+                <div>
+                  <label>Tools</label>
+                  <div style={{ display: 'grid', gap: 4 }}>
+                    {sweepTools.map((t, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                        <input value={t.tool} onChange={e => updateTool(i, 'tool', e.target.value)} placeholder="tool_name" style={{ flex: 1, fontSize: 11 }} />
+                        <input value={JSON.stringify(t.params || {})} onChange={e => updateTool(i, 'params', e.target.value)} placeholder="{}" style={{ flex: 1, fontSize: 11 }} />
+                        <input value={t.label} onChange={e => updateTool(i, 'label', e.target.value)} placeholder="Label" style={{ flex: 1, fontSize: 11 }} />
+                        <button className="btn btn-sm" style={{ padding: '2px 6px', fontSize: 11 }} onClick={() => {
+                          const newTools = sweepTools.filter((_, j) => j !== i);
+                          update('sensor_sweep', 'tools', newTools);
+                        }}>&times;</button>
+                      </div>
+                    ))}
+                    <button className="btn btn-sm" style={{ fontSize: 11, width: 'fit-content' }} onClick={() => {
+                      update('sensor_sweep', 'tools', [...sweepTools, { tool: '', params: {}, label: '' }]);
+                    }}>+ Add Tool</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AgentModal({ agent, onClose, onSaved, allAgentIds }) {
   const isNew = !agent;
   const [form, setForm] = useState({
@@ -26,6 +204,7 @@ function AgentModal({ agent, onClose, onSaved, allAgentIds }) {
     capabilities: (agent?.capabilities || []).join(', '),
     reports_to: agent?.reports_to || '',
   });
+  const [memCfg, setMemCfg] = useState(agent?.metadata?.memory || {});
   const [saving, setSaving] = useState(false);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -35,6 +214,7 @@ function AgentModal({ agent, onClose, onSaved, allAgentIds }) {
     if (!agentId) return alert('Agent ID is required');
     setSaving(true);
     try {
+      const existingMeta = agent?.metadata || {};
       const body = {
         display_name: form.display_name || undefined,
         working_hours_start: form.working_hours_start,
@@ -45,6 +225,7 @@ function AgentModal({ agent, onClose, onSaved, allAgentIds }) {
         max_concurrent_tasks: parseInt(form.max_concurrent_tasks),
         capabilities: form.capabilities ? form.capabilities.split(',').map(s => s.trim()).filter(Boolean) : [],
         reports_to: form.reports_to || null,
+        metadata: { ...existingMeta, memory: memCfg },
       };
       await api.put(`/agents/${agentId}`, body);
       onSaved();
@@ -53,7 +234,7 @@ function AgentModal({ agent, onClose, onSaved, allAgentIds }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 640, maxHeight: '90vh', overflowY: 'auto' }}>
         <h2>{isNew ? 'Add' : 'Edit'} Agent</h2>
         {isNew && (
           <div className="form-group"><label>Agent ID *</label><input value={form.agent_id} onChange={e => set('agent_id', e.target.value)} placeholder="e.g. dispatch, billing, scheduler" /></div>
@@ -88,6 +269,9 @@ function AgentModal({ agent, onClose, onSaved, allAgentIds }) {
             ))}
           </select>
         </div>
+
+        <MemoryConfigPanel mem={memCfg} setMem={setMemCfg} />
+
         <div className="modal-actions">
           <button onClick={onClose}>Cancel</button>
           <button className="btn-primary" onClick={save} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
@@ -126,18 +310,21 @@ export default function Agents() {
                 <div style={{fontWeight:700,fontSize:15}}>{a.display_name || a.agent_id}</div>
                 {a.display_name && <div style={{fontSize:12,color:'var(--text-muted)'}}>{a.agent_id}</div>}
               </div>
-              <span className={`badge badge-${a.current_status === 'working' ? 'in_progress' : a.current_status === 'idle' ? 'todo' : 'blocked'}`}>
-                {a.current_status || 'idle'}
-              </span>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                {a.metadata?.memory?.enabled && <span className="badge" style={{ fontSize: 10, background: 'rgba(138,43,226,0.2)', color: '#ba7de8' }}>MEM</span>}
+                <span className={`badge badge-${a.current_status === 'working' ? 'in_progress' : a.current_status === 'idle' ? 'todo' : 'blocked'}`}>
+                  {a.current_status || 'idle'}
+                </span>
+              </div>
             </div>
             <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, fontSize:12, color:'var(--text-dim)'}}>
               <div>Tasks: <strong style={{color:'var(--text)'}}>{a.active_task_count || a.task_count || 0}</strong></div>
-              <div>Max: <strong style={{color:'var(--text)'}}>{a.max_concurrent_tasks || '—'}</strong></div>
-              <div>Hours: {a.working_hours_start || '?'}–{a.working_hours_end || '?'}</div>
-              <div>TZ: {a.timezone || '—'}</div>
+              <div>Max: <strong style={{color:'var(--text)'}}>{a.max_concurrent_tasks || '\u2014'}</strong></div>
+              <div>Hours: {a.working_hours_start || '?'}\u2013{a.working_hours_end || '?'}</div>
+              <div>TZ: {a.timezone || '\u2014'}</div>
               <div>Last seen: {timeAgo(a.last_heartbeat)}</div>
               <div>{a.after_hours_capable ? '24/7 capable' : 'Business hours'}</div>
-              <div style={{gridColumn:'1/-1'}}>Reports to: <strong style={{color:'var(--text)'}}>{a.reports_to || '—'}</strong></div>
+              <div style={{gridColumn:'1/-1'}}>Reports to: <strong style={{color:'var(--text)'}}>{a.reports_to || '\u2014'}</strong></div>
             </div>
             {a.capabilities?.length > 0 && (
               <div style={{marginTop:8}}>{a.capabilities.map(c => <span key={c} className="tag">{c}</span>)}</div>

@@ -11,6 +11,7 @@ const ALL_GROUPS = [
   'webhook_read', 'webhook_admin',
   'scheduler_read', 'scheduler_admin',
   'cron_read', 'cron_admin',
+  'memory_read', 'memory_write',
 ];
 
 const ALL_ALIASES = ['full', 'read_all', 'write_all', 'task_ops', 'task_readonly', 'supervisor'];
@@ -23,6 +24,7 @@ const TABS = [
   { id: 'debug',       label: 'Debug' },
   { id: 'database',    label: 'Database' },
   { id: 'webui',       label: 'Web UI' },
+  { id: 'memory',      label: 'Memory' },
   { id: 'permissions', label: 'Permissions' },
   { id: 'system',      label: 'System' },
 ];
@@ -649,6 +651,179 @@ function PermissionsTab({ permsData, reloadPerms }) {
   );
 }
 
+// ── Tab: Memory ────────────────────────────────────────────────────────────────
+
+function MemoryTab({ settings, onUpdate, onSave, onReset, dirty, saving, msg }) {
+  const s = settings.memory || {};
+  return (
+    <div>
+      <div className="card section">
+        <div className="section-title">Memory System Global Defaults</div>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
+          Default settings applied when an agent first enables memory. Per-agent settings in the Agents page override these.
+        </p>
+
+        <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 16, marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Dream Cycle (Nightly Consolidation)</div>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+            Decays observation importance over time, archives stale entries, and detects recurring patterns for promotion to long-term memory.
+          </p>
+          <StrField label="Schedule" value={s.dream_schedule || '0 3 * * *'} onChange={v => onUpdate('memory', 'dream_schedule', v)}
+            desc="Cron expression (default: 0 3 * * * = 3 AM daily)" />
+          <div className="form-row">
+            <BoolField label="Decay Enabled" value={s.dream_decay_enabled !== false} onChange={v => onUpdate('memory', 'dream_decay_enabled', v)}
+              desc="Reduce importance of observations over time based on type" />
+            <BoolField label="Auto-Archive Enabled" value={s.dream_archive_enabled !== false} onChange={v => onUpdate('memory', 'dream_archive_enabled', v)}
+              desc="Automatically archive low-importance or expired observations" />
+          </div>
+          <div className="form-row">
+            <NumField label="Pattern Lookback (days)" value={s.dream_pattern_lookback_days || 7} onChange={v => onUpdate('memory', 'dream_pattern_lookback_days', v)}
+              desc="How far back to scan for recurring patterns" />
+            <NumField label="Pattern Min Occurrences" value={s.dream_pattern_min_occurrences || 3} onChange={v => onUpdate('memory', 'dream_pattern_min_occurrences', v)}
+              desc="Minimum times a theme must appear" />
+          </div>
+          <div className="form-row">
+            <NumField label="Pattern Min Unique Days" value={s.dream_pattern_min_unique_days || 3} onChange={v => onUpdate('memory', 'dream_pattern_min_unique_days', v)}
+              desc="Theme must appear across this many distinct days" />
+            <NumField label="Max Active Observations" value={s.dream_max_active_observations || 500} onChange={v => onUpdate('memory', 'dream_max_active_observations', v)}
+              desc="Cap per agent before forced archival" />
+          </div>
+        </div>
+
+        <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 16, marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Rumination (Insight Engine)</div>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+            Periodically reviews observations and task activity across 4 cognitive threads to generate proactive insights.
+          </p>
+          <StrField label="Schedule" value={s.rumination_schedule || '0 */4 * * *'} onChange={v => onUpdate('memory', 'rumination_schedule', v)}
+            desc="Cron expression (default: 0 */4 * * * = every 4 hours)" />
+          <NumField label="Auto-Escalation Threshold" value={s.rumination_max_importance_for_escalation || 8.5} onChange={v => onUpdate('memory', 'rumination_max_importance_for_escalation', v)}
+            desc="Insights with importance >= this value trigger an escalation (0-10)" />
+        </div>
+
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Sensor Sweep</div>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+            Periodically checks system state using configurable tools and records notable changes as observations.
+          </p>
+          <StrField label="Schedule" value={s.sensor_sweep_schedule || '0 */2 * * *'} onChange={v => onUpdate('memory', 'sensor_sweep_schedule', v)}
+            desc="Cron expression (default: 0 */2 * * * = every 2 hours)" />
+          <NumField label="Timeout (seconds)" value={s.sensor_sweep_timeout_seconds || 120} onChange={v => onUpdate('memory', 'sensor_sweep_timeout_seconds', v)}
+            desc="Agent session timeout for sweep" />
+        </div>
+
+        <SectionSaveBar dirty={dirty} saving={saving} onSave={() => onSave('memory')} onReset={() => onReset('memory')} msg={msg} />
+      </div>
+
+      <MemoryWorkspaceGuide />
+    </div>
+  );
+}
+
+// ── Memory Workspace File Guide ─────────────────────────────────────────────
+
+const WORKSPACE_SNIPPETS = [
+  {
+    file: 'AGENTS.md',
+    section: 'Startup Sequence',
+    description: 'Replace the "Read Context" step in your startup sequence with this:',
+    content: `### Step 2: Load Memory Context
+4. **Call \`memory_recall\`** with your agent_id — loads recent observations + long-term memory
+5. **Read \`memory/tasks-YYYY-MM-DD.md\`** (today + yesterday) — detailed shift logs
+
+Don't ask permission. Just do it.`,
+  },
+  {
+    file: 'AGENTS.md',
+    section: 'Memory Section',
+    description: 'Replace the entire "## Memory" section with this:',
+    content: `## Memory
+
+You wake up fresh each session. The memory system is your continuity.
+
+### Startup Sequence
+After reading your instruction files, ALWAYS call \`memory_recall\` with your agent_id to load:
+- Recent observations (last 48h, high importance first)
+- Long-term memory (patterns, preferences, facts, procedures)
+
+This is how you persist across sessions — all memory lives in the database.
+
+### During Work
+- Use \`memory_observe\` to store important findings (decisions, anomalies, patterns)
+- Rate importance honestly (0-10): routine=1-2, useful=5-6, critical=9-10
+- Tag observations — tags drive pattern detection during nightly consolidation
+- Automated/cron observations should be importance 1-2
+
+### Memory Lifecycle
+1. **Observations** — short-term, importance decays daily based on type
+2. **Pattern detection** — programmatic, finds recurring themes across days
+3. **Dream cycle** — nightly, archives stale observations, promotes confirmed patterns
+4. **Long-term memory** — stable facts, patterns, preferences (loaded at startup)
+5. **Rumination** — periodic insights from reviewing observations + task activity
+
+### Daily Logs
+Continue writing shift notes to \`memory/tasks-YYYY-MM-DD.md\` for detailed logs.
+
+### Write It Down
+- If you notice a pattern, use \`memory_observe\` — don't just think about it
+- "Mental notes" don't survive session restarts. Observations do.
+- When you notice a trend, record it — the dream cycle will promote it if it recurs`,
+  },
+  {
+    file: 'SOUL.md',
+    section: 'Continuity Section',
+    description: 'Replace the "## Continuity" section with this:',
+    content: `## Continuity
+
+Each session, you wake up fresh. Call \`memory_recall\` at startup — your observations and long-term memory are how you persist.
+
+Your memory is your growth — observations you record today become the patterns you act on tomorrow. Be honest with importance scores — inflating them pollutes your own memory. The dream cycle consolidates your experiences nightly — trust the system, record everything notable.
+
+Use \`memory_observe\` to capture significant escalation patterns, system health trends, and anything the next session should know. Your daily logs in \`memory/tasks-YYYY-MM-DD.md\` are your detailed shift reports.`,
+  },
+];
+
+function MemoryWorkspaceGuide() {
+  const [copied, setCopied] = useState(null);
+
+  function copySnippet(idx) {
+    navigator.clipboard.writeText(WORKSPACE_SNIPPETS[idx].content).then(() => {
+      setCopied(idx);
+      setTimeout(() => setCopied(null), 2000);
+    });
+  }
+
+  return (
+    <div className="card section" style={{ marginTop: 16 }}>
+      <div className="section-title">Agent Workspace File Updates</div>
+      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
+        To enable memory tools for your agents, update their workspace files with the snippets below.
+        These replace the old MEMORY.md-based approach with database-backed <code>memory_recall</code> / <code>memory_observe</code> tools.
+      </p>
+
+      {WORKSPACE_SNIPPETS.map((s, i) => (
+        <div key={i} style={{ marginBottom: 16, borderBottom: i < WORKSPACE_SNIPPETS.length - 1 ? '1px solid var(--border)' : 'none', paddingBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <div>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>{s.file}</span>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 8 }}>{s.section}</span>
+            </div>
+            <button className="btn btn-sm" onClick={() => copySnippet(i)} style={{ minWidth: 70 }}>
+              {copied === i ? 'Copied!' : 'Copy'}
+            </button>
+          </div>
+          <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: '0 0 8px' }}>{s.description}</p>
+          <pre style={{
+            background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 6,
+            padding: 12, fontSize: 11, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+            maxHeight: 300, overflowY: 'auto', margin: 0,
+          }}>{s.content}</pre>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Tab: System ────────────────────────────────────────────────────────────────
 
 function SystemTab({ configData, healthData }) {
@@ -818,6 +993,7 @@ export default function Settings() {
           {activeTab === 'debug' && <DebugTab {...tabProps('debug')} />}
           {activeTab === 'database' && <DatabaseTab {...tabProps('database')} configData={configData} />}
           {activeTab === 'webui' && <WebUITab {...tabProps('webUI')} />}
+          {activeTab === 'memory' && <MemoryTab {...tabProps('memory')} />}
           {activeTab === 'permissions' && <PermissionsTab permsData={permsData} reloadPerms={reloadPerms} />}
           {activeTab === 'system' && <SystemTab configData={configData} healthData={healthData} />}
         </>

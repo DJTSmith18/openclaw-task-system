@@ -3,6 +3,8 @@
 const { Database } = require('./lib/db');
 const { PermissionResolver } = require('./lib/permissions');
 const { buildTools } = require('./lib/tools');
+const { MemoryEngine } = require('./lib/memory-engine');
+const { buildMemoryTools } = require('./lib/memory-tools');
 const { Scheduler } = require('./lib/scheduler');
 const { WebServer } = require('./web/server');
 const { EventBus } = require('./lib/event-bus');
@@ -29,8 +31,13 @@ module.exports = function (api) {
   // ── Permissions ────────────────────────────────────────────────────────────
   const perms = new PermissionResolver(cfg.agentPermissions);
 
+  // ── Memory Engine ─────────────────────────────────────────────────────────
+  const memoryEngine = new MemoryEngine(db, api.logger);
+
   // ── Tools ──────────────────────────────────────────────────────────────────
-  const allTools = buildTools(db, api.runtime, api.logger, eventBus, cfg);
+  const taskTools = buildTools(db, api.runtime, api.logger, eventBus, cfg);
+  const memTools = buildMemoryTools(memoryEngine, api.logger, eventBus);
+  const allTools = [...taskTools, ...memTools];
 
   // Register tool factory — called once per agent turn.
   // Returns only the tools this agent is allowed to use.

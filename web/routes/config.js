@@ -11,6 +11,13 @@ const DEFAULTS = {
   debug: { scheduler_diagnostics: false },
   database: { host: 'localhost', port: 5432, database: 'openclaw_tasks', user: 'openclaw', password: '', maxConnections: 10 },
   webUI: { port: 18790, host: '0.0.0.0', authToken: '', enabled: true },
+  memory: {
+    dream_schedule: '0 3 * * *', dream_decay_enabled: true, dream_archive_enabled: true,
+    dream_pattern_lookback_days: 7, dream_pattern_min_occurrences: 3, dream_pattern_min_unique_days: 3,
+    dream_max_active_observations: 500,
+    rumination_schedule: '0 */4 * * *', rumination_max_importance_for_escalation: 8.5,
+    sensor_sweep_schedule: '0 */2 * * *', sensor_sweep_timeout_seconds: 120,
+  },
 };
 
 // Which sections require a restart to take effect
@@ -25,6 +32,13 @@ const VALIDATORS = {
   debug: { scheduler_diagnostics: 'boolean' },
   database: { host: 'string', port: 'port', database: 'string', user: 'string', password: 'password', maxConnections: 'posint' },
   webUI: { port: 'port', host: 'string', authToken: 'string', enabled: 'boolean' },
+  memory: {
+    dream_schedule: 'string', dream_decay_enabled: 'boolean', dream_archive_enabled: 'boolean',
+    dream_pattern_lookback_days: 'posint', dream_pattern_min_occurrences: 'posint', dream_pattern_min_unique_days: 'posint',
+    dream_max_active_observations: 'posint',
+    rumination_schedule: 'string', rumination_max_importance_for_escalation: 'number',
+    sensor_sweep_schedule: 'string', sensor_sweep_timeout_seconds: 'posint',
+  },
 };
 
 function validateValue(val, rule) {
@@ -34,6 +48,7 @@ function validateValue(val, rule) {
     case 'port':     return typeof val === 'number' && Number.isInteger(val) && val >= 1 && val <= 65535;
     case 'boolean':  return typeof val === 'boolean';
     case 'password': return typeof val === 'string';
+    case 'number':   return typeof val === 'number';
     default:         return true;
   }
 }

@@ -2,7 +2,7 @@
   "id": "task-system",
   "name": "Task Orchestration System",
   "description": "Centralized task management, agent coordination, escalation, universal webhook-to-task automation, and a full web dashboard.",
-  "version": "1.0.32",
+  "version": "1.0.33",
   "kind": "tool",
   "configSchema": {
     "type": "object",
@@ -167,6 +167,55 @@
           "scheduler_diagnostics": {
             "type": "boolean",
             "description": "Include detailed diagnostics in scheduler_run_cycle output (default: false)"
+          }
+        }
+      },
+      "memory": {
+        "type": "object",
+        "description": "Global memory system defaults (per-agent settings override these)",
+        "additionalProperties": false,
+        "properties": {
+          "dream": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "schedule": { "type": "string", "description": "Cron expression for dream cycle (default: 0 3 * * *)" },
+              "decay_enabled": { "type": "boolean", "description": "Enable importance decay (default: true)" },
+              "archive_enabled": { "type": "boolean", "description": "Enable auto-archival (default: true)" },
+              "pattern_lookback_days": { "type": "number", "description": "Days to look back for pattern detection (default: 7)" },
+              "pattern_min_occurrences": { "type": "number", "description": "Min occurrences to detect a pattern (default: 3)" },
+              "pattern_min_unique_days": { "type": "number", "description": "Min unique days for pattern (default: 3)" },
+              "max_active_observations": { "type": "number", "description": "Cap on active observations per agent (default: 500)" }
+            }
+          },
+          "rumination": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "schedule": { "type": "string", "description": "Cron expression for rumination (default: 0 */4 * * *)" },
+              "threads": { "type": "array", "items": { "type": "string" }, "description": "Cognitive threads (default: [observation, reasoning, memory, planning])" },
+              "max_importance_for_escalation": { "type": "number", "description": "Importance threshold to auto-escalate insights (default: 8.5)" }
+            }
+          },
+          "sensor_sweep": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "schedule": { "type": "string", "description": "Cron expression for sensor sweep (default: 0 */2 * * *)" },
+              "timeout_seconds": { "type": "number", "description": "Agent session timeout (default: 120)" },
+              "tools": {
+                "type": "array",
+                "description": "Tools to call during sensor sweep",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "tool": { "type": "string" },
+                    "params": { "type": "object" },
+                    "label": { "type": "string" }
+                  }
+                }
+              }
+            }
           }
         }
       },

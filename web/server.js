@@ -76,6 +76,7 @@ class WebServer {
     app.use('/dashboard/api', require('./routes/cron')(routeOpts));
     app.use('/dashboard/api', require('./routes/task-templates')(routeOpts));
     app.use('/dashboard/api', require('./routes/dashboard')(routeOpts));
+    app.use('/dashboard/api', require('./routes/memory')(routeOpts));
     app.use('/dashboard/api', require('./routes/config')(configOpts));
 
     // ── Static files (built React app) ──────────────────────────────────────
