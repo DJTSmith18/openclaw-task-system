@@ -170,6 +170,45 @@
           }
         }
       },
+      "nudge": {
+        "type": "object",
+        "description": "Agent nudge/reminder settings — gentle reminders before escalation",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "Enable the nudge system (default: true)"
+          },
+          "nudge_in_progress_minutes": {
+            "type": "number",
+            "description": "Minutes before first nudge to agent with stuck in_progress task (default: 20)"
+          },
+          "nudge_in_progress_interval_minutes": {
+            "type": "number",
+            "description": "Minutes between repeat in_progress nudges (default: 15)"
+          },
+          "nudge_blocked_minutes": {
+            "type": "number",
+            "description": "Minutes before first nudge to supervisor for blocked task (default: 15)"
+          },
+          "nudge_blocked_interval_minutes": {
+            "type": "number",
+            "description": "Minutes between repeat blocked nudges to supervisor (default: 15)"
+          },
+          "nudge_unstarted_minutes": {
+            "type": "number",
+            "description": "Minutes after dispatch before nudging agent who hasn't started task (default: 10)"
+          },
+          "nudge_unstarted_interval_minutes": {
+            "type": "number",
+            "description": "Minutes between repeat unstarted nudges (default: 10)"
+          },
+          "max_nudges": {
+            "type": "number",
+            "description": "Maximum nudges per task before stopping (escalation takes over) (default: 5)"
+          }
+        }
+      },
       "memory": {
         "type": "object",
         "description": "Global memory system defaults (per-agent settings override these)",
