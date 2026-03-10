@@ -58,7 +58,7 @@ function CreateTaskModal({ onClose, onCreated }) {
           <div className="form-group"><label>Assign To</label>
             <select value={form.assigned_to_agent} onChange={e => set('assigned_to_agent', e.target.value)}>
               <option value="">— Unassigned —</option>
-              {(agentList || []).map(a => <option key={a.agent_id} value={a.agent_id}>{a.agent_id}</option>)}
+              {(agentList?.agents || []).map(a => <option key={a.agent_id} value={a.agent_id}>{a.agent_id}</option>)}
             </select>
           </div>
           <div className="form-group"><label>Deadline</label><input type="datetime-local" value={form.deadline} onChange={e => set('deadline', e.target.value)} /></div>
