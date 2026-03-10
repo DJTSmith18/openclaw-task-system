@@ -19,6 +19,7 @@ const TABS = [
   { id: 'general',     label: 'General' },
   { id: 'scheduler',   label: 'Scheduler' },
   { id: 'dispatcher',  label: 'Dispatcher' },
+  { id: 'nudge',       label: 'Nudge' },
   { id: 'escalation',  label: 'Escalation' },
   { id: 'debug',       label: 'Debug' },
   { id: 'database',    label: 'Database' },
@@ -177,6 +178,64 @@ function DispatcherTab({ settings, onUpdate, onSave, onReset, dirty, saving, msg
         </div>
       </div>
       <SectionSaveBar dirty={dirty} saving={saving} onSave={() => onSave('dispatcher')} onReset={() => onReset('dispatcher')} msg={msg} />
+    </div>
+  );
+}
+
+// ── Tab: Nudge ────────────────────────────────────────────────────────────────
+
+function NudgeTab({ settings, onUpdate, onSave, onReset, dirty, saving, msg }) {
+  const s = settings.nudge || {};
+  return (
+    <div className="card section">
+      <div className="section-title">Agent Nudge / Reminder Settings</div>
+      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
+        Nudges are gentle reminders sent to agents (or supervisors) before escalation fires.
+        They give agents a chance to respond before the task is escalated up the chain.
+      </p>
+      <BoolField label="Nudge System Enabled" value={s.enabled !== false} onChange={v => onUpdate('nudge', 'enabled', v)}
+        desc="Master toggle for all nudge reminders" />
+      <div style={{ borderTop: '1px solid var(--border)', margin: '16px 0', paddingTop: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>In-Progress Nudge</div>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+          Remind the assigned agent when their task has been in_progress too long without updates. Fires before the stuck-task escalation.
+        </p>
+        <div className="form-row">
+          <NumField label="First Nudge After (min)" value={s.nudge_in_progress_minutes || 20} onChange={v => onUpdate('nudge', 'nudge_in_progress_minutes', v)}
+            desc="Minutes of inactivity before the first in-progress nudge" />
+          <NumField label="Repeat Every (min)" value={s.nudge_in_progress_interval_minutes || 15} onChange={v => onUpdate('nudge', 'nudge_in_progress_interval_minutes', v)}
+            desc="Minutes between repeat nudges" />
+        </div>
+      </div>
+      <div style={{ borderTop: '1px solid var(--border)', margin: '16px 0', paddingTop: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Blocked Nudge (to Supervisor)</div>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+          Remind the supervisor (agent or human) when a task under their report has been blocked. Uses the agent hierarchy (reports_to).
+        </p>
+        <div className="form-row">
+          <NumField label="First Nudge After (min)" value={s.nudge_blocked_minutes || 15} onChange={v => onUpdate('nudge', 'nudge_blocked_minutes', v)}
+            desc="Minutes blocked before first supervisor nudge" />
+          <NumField label="Repeat Every (min)" value={s.nudge_blocked_interval_minutes || 15} onChange={v => onUpdate('nudge', 'nudge_blocked_interval_minutes', v)}
+            desc="Minutes between repeat blocked nudges" />
+        </div>
+      </div>
+      <div style={{ borderTop: '1px solid var(--border)', margin: '16px 0', paddingTop: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Unstarted Dispatch Nudge</div>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+          Remind the assigned agent when a dispatched task is still in todo status. Only targets actually-dispatched tasks (within max_concurrent_tasks limit).
+        </p>
+        <div className="form-row">
+          <NumField label="First Nudge After (min)" value={s.nudge_unstarted_minutes || 10} onChange={v => onUpdate('nudge', 'nudge_unstarted_minutes', v)}
+            desc="Minutes after dispatch before first nudge" />
+          <NumField label="Repeat Every (min)" value={s.nudge_unstarted_interval_minutes || 10} onChange={v => onUpdate('nudge', 'nudge_unstarted_interval_minutes', v)}
+            desc="Minutes between repeat unstarted nudges" />
+        </div>
+      </div>
+      <div style={{ borderTop: '1px solid var(--border)', margin: '16px 0', paddingTop: 16 }}>
+        <NumField label="Max Nudges Per Task" value={s.max_nudges || 5} onChange={v => onUpdate('nudge', 'max_nudges', v)}
+          desc="Stop nudging after this many attempts — escalation engine takes over" />
+      </div>
+      <SectionSaveBar dirty={dirty} saving={saving} onSave={() => onSave('nudge')} onReset={() => onReset('nudge')} msg={msg} />
     </div>
   );
 }
@@ -814,6 +873,7 @@ export default function Settings() {
           {activeTab === 'general' && <GeneralTab {...tabProps('general')} />}
           {activeTab === 'scheduler' && <SchedulerTab {...tabProps('scheduler')} />}
           {activeTab === 'dispatcher' && <DispatcherTab {...tabProps('dispatcher')} />}
+          {activeTab === 'nudge' && <NudgeTab {...tabProps('nudge')} />}
           {activeTab === 'escalation' && <EscalationTab {...tabProps('escalation')} />}
           {activeTab === 'debug' && <DebugTab {...tabProps('debug')} />}
           {activeTab === 'database' && <DatabaseTab {...tabProps('database')} configData={configData} />}
