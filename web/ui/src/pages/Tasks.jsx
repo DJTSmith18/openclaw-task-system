@@ -18,6 +18,7 @@ function CreateTaskModal({ onClose, onCreated }) {
   const [form, setForm] = useState({ title: '', description: '', priority: 3, category: 'general', assigned_to_agent: '', deadline: '', tags: '' });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState(null);
+  const { data: agentList } = useApi('/agents');
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -54,7 +55,12 @@ function CreateTaskModal({ onClose, onCreated }) {
           <div className="form-group"><label>Category</label><input value={form.category} onChange={e => set('category', e.target.value)} /></div>
         </div>
         <div className="form-row">
-          <div className="form-group"><label>Assign To</label><input value={form.assigned_to_agent} onChange={e => set('assigned_to_agent', e.target.value)} placeholder="agent-id" /></div>
+          <div className="form-group"><label>Assign To</label>
+            <select value={form.assigned_to_agent} onChange={e => set('assigned_to_agent', e.target.value)}>
+              <option value="">— Unassigned —</option>
+              {(agentList || []).map(a => <option key={a.agent_id} value={a.agent_id}>{a.agent_id}</option>)}
+            </select>
+          </div>
           <div className="form-group"><label>Deadline</label><input type="datetime-local" value={form.deadline} onChange={e => set('deadline', e.target.value)} /></div>
         </div>
         <div className="form-group"><label>Tags (comma-separated)</label><input value={form.tags} onChange={e => set('tags', e.target.value)} placeholder="billing, urgent" /></div>

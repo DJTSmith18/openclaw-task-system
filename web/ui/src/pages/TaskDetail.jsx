@@ -23,6 +23,7 @@ export default function TaskDetail() {
   const { data: commentsData, reload: reloadComments } = useApi(`/tasks/${id}/comments`);
   const { data: depsData, reload: reloadDeps } = useApi(`/tasks/${id}/deps`);
   const { data: logsData, reload: reloadLogs } = useApi(`/worklogs?task_id=${id}&limit=50`);
+  const { data: agentList } = useApi('/agents');
 
   const reloadAll = () => { reload(); reloadComments(); reloadDeps(); reloadLogs(); };
   useSSE(reloadAll, ['task', 'comment', 'worklog']);
@@ -125,7 +126,12 @@ export default function TaskDetail() {
               <div className="form-group"><label>Category</label><input value={form.category} onChange={e => setForm(f => ({...f, category: e.target.value}))} /></div>
             </div>
             <div className="form-row">
-              <div className="form-group"><label>Assigned To</label><input value={form.assigned_to_agent} onChange={e => setForm(f => ({...f, assigned_to_agent: e.target.value}))} /></div>
+              <div className="form-group"><label>Assigned To</label>
+                <select value={form.assigned_to_agent} onChange={e => setForm(f => ({...f, assigned_to_agent: e.target.value}))}>
+                  <option value="">— Unassigned —</option>
+                  {(agentList || []).map(a => <option key={a.agent_id} value={a.agent_id}>{a.agent_id}</option>)}
+                </select>
+              </div>
               <div className="form-group"><label>Deadline</label><input type="datetime-local" value={form.deadline} onChange={e => setForm(f => ({...f, deadline: e.target.value}))} /></div>
             </div>
             <div className="form-group"><label>Tags</label><input value={form.tags} onChange={e => setForm(f => ({...f, tags: e.target.value}))} /></div>
