@@ -5,6 +5,7 @@ const cors = require('cors');
 const path = require('path');
 const { createWebhookRouter } = require('../lib/webhook-listener');
 const cronTaskRunner = require('../lib/cron-task-runner');
+const schedulerTimer = require('../lib/scheduler-timer');
 
 class WebServer {
   constructor(opts) {
@@ -111,6 +112,8 @@ class WebServer {
     return new Promise((resolve, reject) => {
       // Start cron task template runner
       cronTaskRunner.start(this.db, this.logger, this.eventBus);
+      // Start programmatic scheduler timers (replaces scheduler agent cron jobs)
+      schedulerTimer.start(this.db, this.runtime, this.logger, this.eventBus, this.cfg);
 
       this._server = app.listen(this.port, this.host, () => {
         this.logger.info(`[task-system] web server listening on ${this.host}:${this.port}`);
@@ -132,6 +135,7 @@ class WebServer {
 
   stop() {
     cronTaskRunner.stop();
+    schedulerTimer.stop();
     if (this._server) {
       this._server.close();
       this._server = null;
