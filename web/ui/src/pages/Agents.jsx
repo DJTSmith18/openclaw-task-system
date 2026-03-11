@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useSSE } from '../hooks/useSSE';
 import { api } from '../api';
@@ -19,7 +19,37 @@ const DEFAULT_SWEEP_TOOLS = [
   { tool: 'escalation_query', params: { status: 'pending' }, label: 'Pending escalations' },
 ];
 
-function MemoryConfigPanel({ mem, setMem }) {
+/** Resolve allowed tool names from permissions data for a given agentId. */
+function resolveAgentTools(permsData, agentId) {
+  if (!permsData) return [];
+  const groups = permsData.groups || [];
+  const aliases = permsData.aliases || [];
+  const agentPerms = permsData.agentPermissions || {};
+  const assignedGroups = agentPerms[agentId] || agentPerms['*'] || [];
+
+  // Expand aliases into group names
+  const aliasMap = {};
+  for (const a of aliases) aliasMap[a.name] = a.groups || [];
+  const expandedGroups = new Set();
+  for (const entry of assignedGroups) {
+    if (aliasMap[entry]) {
+      for (const g of aliasMap[entry]) expandedGroups.add(g);
+    } else {
+      expandedGroups.add(entry);
+    }
+  }
+
+  // Collect tool names from expanded groups
+  const groupMap = {};
+  for (const g of groups) groupMap[g.name] = g.toolNames || [];
+  const tools = new Set();
+  for (const g of expandedGroups) {
+    for (const t of (groupMap[g] || [])) tools.add(t);
+  }
+  return [...tools].sort();
+}
+
+function MemoryConfigPanel({ mem, setMem, allowedTools }) {
   const enabled = mem.enabled || false;
   const dream = mem.dream || {};
   const rum = mem.rumination || {};
@@ -29,15 +59,27 @@ function MemoryConfigPanel({ mem, setMem }) {
   const update = (section, key, val) => {
     setMem(prev => ({ ...prev, [section]: { ...prev[section], [key]: val } }));
   };
-  const updateTool = (idx, field, val) => {
-    const newTools = [...sweepTools];
-    if (field === 'params') {
-      try { newTools[idx] = { ...newTools[idx], params: JSON.parse(val) }; } catch { return; }
-    } else {
-      newTools[idx] = { ...newTools[idx], [field]: val };
-    }
+
+  // Sensor sweep tool helpers — index-based to support duplicate tool names
+  function addSweepTool(toolName) {
+    const newTools = [...sweepTools, { tool: toolName, params: {}, label: toolName.replace(/_/g, ' ') }];
     update('sensor_sweep', 'tools', newTools);
-  };
+  }
+
+  function removeSweepTool(idx) {
+    update('sensor_sweep', 'tools', sweepTools.filter((_, i) => i !== idx));
+  }
+
+  function updateSweepTool(idx, field, val) {
+    const newTools = sweepTools.map((t, i) => {
+      if (i !== idx) return t;
+      if (field === 'params') {
+        try { return { ...t, params: JSON.parse(val) }; } catch { return t; }
+      }
+      return { ...t, [field]: val };
+    });
+    update('sensor_sweep', 'tools', newTools);
+  }
 
   return (
     <div style={{ borderTop: '1px solid var(--border)', marginTop: 16, paddingTop: 16 }}>
@@ -163,23 +205,37 @@ function MemoryConfigPanel({ mem, setMem }) {
                   </div>
                 </div>
                 <div>
-                  <label>Tools</label>
-                  <div style={{ display: 'grid', gap: 4 }}>
-                    {sweepTools.map((t, i) => (
-                      <div key={i} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                        <input value={t.tool} onChange={e => updateTool(i, 'tool', e.target.value)} placeholder="tool_name" style={{ flex: 1, fontSize: 11 }} />
-                        <input value={JSON.stringify(t.params || {})} onChange={e => updateTool(i, 'params', e.target.value)} placeholder="{}" style={{ flex: 1, fontSize: 11 }} />
-                        <input value={t.label} onChange={e => updateTool(i, 'label', e.target.value)} placeholder="Label" style={{ flex: 1, fontSize: 11 }} />
-                        <button className="btn btn-sm" style={{ padding: '2px 6px', fontSize: 11 }} onClick={() => {
-                          const newTools = sweepTools.filter((_, j) => j !== i);
-                          update('sensor_sweep', 'tools', newTools);
-                        }}>&times;</button>
-                      </div>
-                    ))}
-                    <button className="btn btn-sm" style={{ fontSize: 11, width: 'fit-content' }} onClick={() => {
-                      update('sensor_sweep', 'tools', [...sweepTools, { tool: '', params: {}, label: '' }]);
-                    }}>+ Add Tool</button>
-                  </div>
+                  <label>Tools to Sweep</label>
+                  {allowedTools && allowedTools.length > 0 ? (
+                    <div style={{ display: 'grid', gap: 4 }}>
+                      {sweepTools.map((t, i) => (
+                        <div key={i} style={{ background: 'var(--bg)', borderRadius: 4, padding: '4px 6px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <code style={{ fontSize: 11, flex: 1 }}>{t.tool}</code>
+                            <button className="btn btn-sm" style={{ padding: '1px 5px', fontSize: 10, lineHeight: 1 }}
+                              onClick={() => removeSweepTool(i)} title="Remove">&times;</button>
+                          </div>
+                          <div style={{ display: 'flex', gap: 4, marginTop: 3 }}>
+                            <input value={JSON.stringify(t.params || {})} onChange={e => updateSweepTool(i, 'params', e.target.value)}
+                              placeholder="{}" style={{ flex: 1, fontSize: 10 }} title="Parameters (JSON)" />
+                            <input value={t.label || ''} onChange={e => updateSweepTool(i, 'label', e.target.value)}
+                              placeholder="Label" style={{ flex: 1, fontSize: 10 }} title="Display label" />
+                          </div>
+                        </div>
+                      ))}
+                      <select style={{ fontSize: 11, padding: '3px 6px' }} value=""
+                        onChange={e => { if (e.target.value) addSweepTool(e.target.value); }}>
+                        <option value="">+ Add tool...</option>
+                        {allowedTools.map(t => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                      No tools available — configure agent permissions in Settings &gt; Permissions first
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -206,6 +262,15 @@ function AgentModal({ agent, onClose, onSaved, allAgentIds }) {
   });
   const [memCfg, setMemCfg] = useState(agent?.metadata?.memory || {});
   const [saving, setSaving] = useState(false);
+  const [permsData, setPermsData] = useState(null);
+
+  // Fetch permissions data to resolve allowed tools for this agent
+  useEffect(() => {
+    api.get('/config/permissions').then(setPermsData).catch(() => {});
+  }, []);
+
+  const agentId = isNew ? form.agent_id : agent?.agent_id;
+  const allowedTools = permsData ? resolveAgentTools(permsData, agentId) : [];
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -270,7 +335,7 @@ function AgentModal({ agent, onClose, onSaved, allAgentIds }) {
           </select>
         </div>
 
-        <MemoryConfigPanel mem={memCfg} setMem={setMemCfg} />
+        <MemoryConfigPanel mem={memCfg} setMem={setMemCfg} allowedTools={allowedTools} />
 
         <div className="modal-actions">
           <button onClick={onClose}>Cancel</button>

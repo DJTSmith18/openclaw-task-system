@@ -721,66 +721,19 @@ function PermissionsTab({ permsData, reloadPerms }) {
 
 // ── Tab: Memory ────────────────────────────────────────────────────────────────
 
-function MemoryTab({ settings, onUpdate, onSave, onReset, dirty, saving, msg }) {
-  const s = settings.memory || {};
+function MemoryTab() {
   return (
     <div>
       <div className="card section">
-        <div className="section-title">Memory System Global Defaults</div>
+        <div className="section-title">Memory System</div>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
-          Default settings applied when an agent first enables memory. Per-agent settings in the Agents page override these.
+          Memory is configured <strong>per agent</strong> in the <strong>Agents</strong> page. Click any agent to open its settings, then enable the Memory System toggle to configure:
         </p>
-
-        <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 16, marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Dream Cycle (Nightly Consolidation)</div>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
-            Decays observation importance over time, archives stale entries, and detects recurring patterns for promotion to long-term memory.
-          </p>
-          <StrField label="Schedule" value={s.dream_schedule || '0 3 * * *'} onChange={v => onUpdate('memory', 'dream_schedule', v)}
-            desc="Cron expression (default: 0 3 * * * = 3 AM daily)" />
-          <div className="form-row">
-            <BoolField label="Decay Enabled" value={s.dream_decay_enabled !== false} onChange={v => onUpdate('memory', 'dream_decay_enabled', v)}
-              desc="Reduce importance of observations over time based on type" />
-            <BoolField label="Auto-Archive Enabled" value={s.dream_archive_enabled !== false} onChange={v => onUpdate('memory', 'dream_archive_enabled', v)}
-              desc="Automatically archive low-importance or expired observations" />
-          </div>
-          <div className="form-row">
-            <NumField label="Pattern Lookback (days)" value={s.dream_pattern_lookback_days || 7} onChange={v => onUpdate('memory', 'dream_pattern_lookback_days', v)}
-              desc="How far back to scan for recurring patterns" />
-            <NumField label="Pattern Min Occurrences" value={s.dream_pattern_min_occurrences || 3} onChange={v => onUpdate('memory', 'dream_pattern_min_occurrences', v)}
-              desc="Minimum times a theme must appear" />
-          </div>
-          <div className="form-row">
-            <NumField label="Pattern Min Unique Days" value={s.dream_pattern_min_unique_days || 3} onChange={v => onUpdate('memory', 'dream_pattern_min_unique_days', v)}
-              desc="Theme must appear across this many distinct days" />
-            <NumField label="Max Active Observations" value={s.dream_max_active_observations || 500} onChange={v => onUpdate('memory', 'dream_max_active_observations', v)}
-              desc="Cap per agent before forced archival" />
-          </div>
+        <div style={{ fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.8 }}>
+          <div><strong>Dream Cycle</strong> &mdash; Nightly consolidation: decays observation importance, archives stale entries, detects recurring patterns for promotion to long-term memory.</div>
+          <div><strong>Rumination</strong> &mdash; Periodic insight engine: reviews observations and task activity across cognitive threads (observation, reasoning, memory, planning) to generate proactive insights.</div>
+          <div><strong>Sensor Sweep</strong> &mdash; Periodic system state check: runs configured tools and records notable changes as observations. Tools are selectable from the agent's permission-allowed tool list.</div>
         </div>
-
-        <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 16, marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Rumination (Insight Engine)</div>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
-            Periodically reviews observations and task activity across 4 cognitive threads to generate proactive insights.
-          </p>
-          <StrField label="Schedule" value={s.rumination_schedule || '0 */4 * * *'} onChange={v => onUpdate('memory', 'rumination_schedule', v)}
-            desc="Cron expression (default: 0 */4 * * * = every 4 hours)" />
-          <NumField label="Auto-Escalation Threshold" value={s.rumination_max_importance_for_escalation || 8.5} onChange={v => onUpdate('memory', 'rumination_max_importance_for_escalation', v)}
-            desc="Insights with importance >= this value trigger an escalation (0-10)" />
-        </div>
-
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Sensor Sweep</div>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
-            Periodically checks system state using configurable tools and records notable changes as observations.
-          </p>
-          <StrField label="Schedule" value={s.sensor_sweep_schedule || '0 */2 * * *'} onChange={v => onUpdate('memory', 'sensor_sweep_schedule', v)}
-            desc="Cron expression (default: 0 */2 * * * = every 2 hours)" />
-          <NumField label="Timeout (seconds)" value={s.sensor_sweep_timeout_seconds || 120} onChange={v => onUpdate('memory', 'sensor_sweep_timeout_seconds', v)}
-            desc="Agent session timeout for sweep" />
-        </div>
-
-        <SectionSaveBar dirty={dirty} saving={saving} onSave={() => onSave('memory')} onReset={() => onReset('memory')} msg={msg} />
       </div>
 
       <MemoryWorkspaceGuide />
@@ -1062,7 +1015,7 @@ export default function Settings() {
           {activeTab === 'debug' && <DebugTab {...tabProps('debug')} />}
           {activeTab === 'database' && <DatabaseTab {...tabProps('database')} configData={configData} />}
           {activeTab === 'webui' && <WebUITab {...tabProps('webUI')} />}
-          {activeTab === 'memory' && <MemoryTab {...tabProps('memory')} />}
+          {activeTab === 'memory' && <MemoryTab />}
           {activeTab === 'permissions' && <PermissionsTab permsData={permsData} reloadPerms={reloadPerms} />}
           {activeTab === 'system' && <SystemTab configData={configData} healthData={healthData} />}
         </>
