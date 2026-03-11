@@ -19,35 +19,6 @@ const DEFAULT_SWEEP_TOOLS = [
   { tool: 'escalation_query', params: { status: 'pending' }, label: 'Pending escalations' },
 ];
 
-/** Resolve allowed tool names from permissions data for a given agentId. */
-function resolveAgentTools(permsData, agentId) {
-  if (!permsData) return [];
-  const groups = permsData.groups || [];
-  const aliases = permsData.aliases || [];
-  const agentPerms = permsData.agentPermissions || {};
-  const assignedGroups = agentPerms[agentId] || agentPerms['*'] || [];
-
-  // Expand aliases into group names
-  const aliasMap = {};
-  for (const a of aliases) aliasMap[a.name] = a.groups || [];
-  const expandedGroups = new Set();
-  for (const entry of assignedGroups) {
-    if (aliasMap[entry]) {
-      for (const g of aliasMap[entry]) expandedGroups.add(g);
-    } else {
-      expandedGroups.add(entry);
-    }
-  }
-
-  // Collect tool names from expanded groups
-  const groupMap = {};
-  for (const g of groups) groupMap[g.name] = g.toolNames || [];
-  const tools = new Set();
-  for (const g of expandedGroups) {
-    for (const t of (groupMap[g] || [])) tools.add(t);
-  }
-  return [...tools].sort();
-}
 
 function MemoryConfigPanel({ mem, setMem, allowedTools }) {
   const enabled = mem.enabled || false;
@@ -205,6 +176,19 @@ function MemoryConfigPanel({ mem, setMem, allowedTools }) {
                   </div>
                 </div>
                 <div>
+                  <label>Prompt</label>
+                  <textarea
+                    value={sweep.prompt || ''}
+                    onChange={e => update('sensor_sweep', 'prompt', e.target.value)}
+                    placeholder={'Run sensor sweep — check system state and record notable changes:\n{toolLines}\nFor each notable finding, call memory_observe with agent_id "{agent_id}", source "sensor_sweep", and appropriate importance (0-10).\nSkip routine/unchanged data — only record what is new or changed. Reply briefly or HEARTBEAT_OK if nothing notable.'}
+                    rows={4}
+                    style={{ fontSize: 11, fontFamily: 'monospace', resize: 'vertical', width: '100%' }}
+                  />
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+                    Leave blank for default. Variables: <code>{'{toolLines}'}</code> (auto-generated from tools below), <code>{'{agent_id}'}</code>
+                  </div>
+                </div>
+                <div>
                   <label>Tools to Sweep</label>
                   {allowedTools && allowedTools.length > 0 ? (
                     <div style={{ display: 'grid', gap: 4 }}>
@@ -262,15 +246,16 @@ function AgentModal({ agent, onClose, onSaved, allAgentIds }) {
   });
   const [memCfg, setMemCfg] = useState(agent?.metadata?.memory || {});
   const [saving, setSaving] = useState(false);
-  const [permsData, setPermsData] = useState(null);
+  const [allowedTools, setAllowedTools] = useState([]);
 
-  // Fetch permissions data to resolve allowed tools for this agent
-  useEffect(() => {
-    api.get('/config/permissions').then(setPermsData).catch(() => {});
-  }, []);
-
+  // Fetch all tools available to this agent (from OpenClaw CLI or plugin fallback)
   const agentId = isNew ? form.agent_id : agent?.agent_id;
-  const allowedTools = permsData ? resolveAgentTools(permsData, agentId) : [];
+  useEffect(() => {
+    if (!agentId) return;
+    api.get(`/config/agent-tools/${encodeURIComponent(agentId)}`)
+      .then(data => setAllowedTools(data?.tools || []))
+      .catch(() => {});
+  }, [agentId]);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 

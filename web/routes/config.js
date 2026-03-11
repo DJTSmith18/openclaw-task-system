@@ -280,6 +280,21 @@ module.exports = function ({ db, eventBus, permissionResolver, openclawJsonPath,
     } catch (err) { res.status(500).json({ error: err.message }); }
   });
 
+  // ── List this plugin's tools (for sensor sweep tool picker) ─────────────
+  r.get('/config/agent-tools/:agentId', (req, res) => {
+    try {
+      const { agentId } = req.params;
+      if (!agentId) return res.status(400).json({ error: 'agentId required' });
+
+      // Sensor sweep only uses this plugin's tools — the agent calls them during its sweep
+      const tools = [...new Set(
+        PermissionResolver.describeGroups().flatMap(g => g.toolNames)
+      )].sort();
+
+      res.json({ agentId, tools });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
   // ── Test message send via openclaw message send ─────────────────────────
   r.post('/config/test-sms', async (req, res) => {
     try {
