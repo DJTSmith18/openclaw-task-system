@@ -2,7 +2,7 @@
   "id": "task-system",
   "name": "Task Orchestration System",
   "description": "Centralized task management, agent coordination, escalation, universal webhook-to-task automation, and a full web dashboard.",
-  "version": "1.0.33",
+  "version": "1.0.34",
   "kind": "tool",
   "configSchema": {
     "type": "object",
@@ -90,6 +90,14 @@
           "cleanupDays": {
             "type": "number",
             "description": "Days before archiving completed tasks (default: 30)"
+          },
+          "urgentCycleEnabled": {
+            "type": "boolean",
+            "description": "Enable fast-track cycle for urgent (priority=1) tasks (default: true)"
+          },
+          "urgentCycleIntervalSeconds": {
+            "type": "number",
+            "description": "Seconds between urgent task cycles (default: 30)"
           }
         }
       },

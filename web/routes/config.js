@@ -5,7 +5,7 @@ const { PermissionResolver, GROUPS, ALIASES } = require('../../lib/permissions')
 // Default values for all configurable settings
 const DEFAULTS = {
   general: { timezone: 'America/Toronto' },
-  scheduler: { agentId: '', checkIntervalMinutes: 5, stuckThresholdMinutes: 30, deadlineWarningMinutes: 30, cleanupDays: 30 },
+  scheduler: { agentId: '', checkIntervalMinutes: 5, stuckThresholdMinutes: 30, deadlineWarningMinutes: 30, cleanupDays: 30, urgentCycleEnabled: true, urgentCycleIntervalSeconds: 30 },
   dispatcher: { dispatch_cooldown_minutes: 15, priority_aging_minutes: 60, preemption_enabled: true, wake_timeout_seconds: 120, unack_threshold_minutes: 10, max_dispatch_attempts: 3 },
   escalation: { default_timeout_minutes: 30, default_cooldown_minutes: 30, default_max_escalations: 3, human_escalation_channel: '', human_escalation_account: '', human_escalation_target: '' },
   debug: { scheduler_diagnostics: false },
@@ -26,7 +26,7 @@ const RESTART_SECTIONS = new Set(['database', 'webUI']);
 // Validation rules per section
 const VALIDATORS = {
   general: { timezone: 'string' },
-  scheduler: { agentId: 'string', checkIntervalMinutes: 'posint', stuckThresholdMinutes: 'posint', deadlineWarningMinutes: 'posint', cleanupDays: 'posint' },
+  scheduler: { agentId: 'string', checkIntervalMinutes: 'posint', stuckThresholdMinutes: 'posint', deadlineWarningMinutes: 'posint', cleanupDays: 'posint', urgentCycleEnabled: 'boolean', urgentCycleIntervalSeconds: 'posint' },
   dispatcher: { dispatch_cooldown_minutes: 'posint', priority_aging_minutes: 'posint', preemption_enabled: 'boolean', wake_timeout_seconds: 'posint', unack_threshold_minutes: 'posint', max_dispatch_attempts: 'posint' },
   escalation: { default_timeout_minutes: 'posint', default_cooldown_minutes: 'posint', default_max_escalations: 'posint', human_escalation_channel: 'string', human_escalation_account: 'string', human_escalation_target: 'string' },
   debug: { scheduler_diagnostics: 'boolean' },

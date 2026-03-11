@@ -139,6 +139,16 @@ function SchedulerTab({ settings, onUpdate, onSave, onReset, dirty, saving, msg 
         <NumField label="Cleanup Days" value={s.cleanupDays || 30} onChange={v => onUpdate('scheduler', 'cleanupDays', v)}
           desc="Days before completed/cancelled tasks are archived" />
       </div>
+      <div style={{ borderTop: '1px solid var(--border)', marginTop: 20, paddingTop: 16 }}>
+        <div className="section-title" style={{ fontSize: 13 }}>Urgent Task Fast-Track</div>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+          A lightweight cycle that runs frequently to fast-track priority=1 (urgent) tasks through dispatch, completion notifications, and escalation checks.
+        </p>
+        <BoolField label="Urgent Cycle Enabled" value={s.urgentCycleEnabled !== false} onChange={v => onUpdate('scheduler', 'urgentCycleEnabled', v)}
+          desc="Enable the fast-track cycle for urgent tasks. When disabled, urgent tasks wait for the normal scheduler cycle." />
+        <NumField label="Urgent Cycle Interval (seconds)" value={s.urgentCycleIntervalSeconds || 30} onChange={v => onUpdate('scheduler', 'urgentCycleIntervalSeconds', v)}
+          desc="Seconds between urgent task cycles (minimum: 10)" min={10} />
+      </div>
       <SectionSaveBar dirty={dirty} saving={saving} onSave={() => onSave('scheduler')} onReset={() => onReset('scheduler')} msg={msg} />
     </div>
   );

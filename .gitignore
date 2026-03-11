@@ -3,3 +3,5 @@ web/ui/node_modules/
 web/ui/dist/
 *.tar.gz
 IMPLEMENTATION-PLAN.md
+agent-files/dispatcher/
+agent-files/customer-coms/
