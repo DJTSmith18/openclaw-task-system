@@ -12,8 +12,9 @@ Follow these rules exactly for every dispatched task. No exceptions.
 - If you need information, clarification, or a decision: set the task to `blocked`
 - The escalation system will route blocked tasks to the right person
 
-### 3. If Blocked, Use the Status
-- Call task_status with status=`blocked`
+### 3. If Blocked or Waiting, Use the Correct Status
+- `blocked` = stuck, need supervisor/human help → triggers escalation
+- `waiting` = waiting for a response from another agent or external party → no escalation, gentle nudges
 - Your note MUST include: what you need, from whom, and what you already tried
 - Then STOP working on that task — move to your next task or exit
 
