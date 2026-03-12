@@ -4,7 +4,7 @@ import { useApi } from '../hooks/useApi';
 import { useSSE } from '../hooks/useSSE';
 import { api } from '../api';
 
-const STATUSES = ['todo', 'in_progress', 'unblocked', 'blocked', 'done', 'cancelled'];
+const STATUSES = ['todo', 'in_progress', 'unblocked', 'blocked', 'waiting', 'done', 'cancelled'];
 const PRIORITY_LABELS = { 1: 'Urgent', 2: 'High', 3: 'Normal', 4: 'Low' };
 
 function timeAgo(ts) {
@@ -168,7 +168,7 @@ export default function TaskDetail() {
         <div className="card section">
           <div className="section-title">Change Status</div>
           <div className="form-group">
-            <input placeholder={t.status === 'blocked' ? 'Note REQUIRED: explain how blocker was resolved' : 'Note (REQUIRED for block/unblock)'} value={statusNote} onChange={e => setStatusNote(e.target.value)} />
+            <input placeholder={t.status === 'blocked' ? 'Note REQUIRED: explain how blocker was resolved' : t.status === 'waiting' ? 'Note REQUIRED: explain the response or why wait ended' : 'Note (REQUIRED for block/waiting transitions)'} value={statusNote} onChange={e => setStatusNote(e.target.value)} />
           </div>
           <div className="btn-group" style={{flexWrap:'wrap'}}>
             {(() => {
@@ -181,6 +181,10 @@ export default function TaskDetail() {
                   <button key="done" className="btn btn-sm btn-success" onClick={() => changeStatus('done')}>done</button>,
                   <button key="cancelled" className="btn btn-sm btn-danger" onClick={() => changeStatus('cancelled')}>cancelled</button>,
                 ];
+              }
+              if (t.status === 'waiting') {
+                // Waiting: show In Progress (response received), Blocked (actually stuck), Done, Cancelled
+                options = ['in_progress', 'blocked', 'done', 'cancelled'];
               }
               if (t.status === 'unblocked') {
                 // Unblocked: show In Progress, Blocked, Done, Cancelled

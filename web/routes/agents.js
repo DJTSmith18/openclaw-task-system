@@ -10,7 +10,7 @@ module.exports = function ({ db, eventBus }) {
       // Attach task counts
       for (const agent of agents) {
         agent.active_task_count = await db.getCount(
-          `SELECT COUNT(*) AS count FROM tasks WHERE assigned_to_agent = $1 AND status IN ('todo','in_progress','blocked','unblocked')`,
+          `SELECT COUNT(*) AS count FROM tasks WHERE assigned_to_agent = $1 AND status IN ('todo','in_progress','blocked','unblocked','waiting')`,
           [agent.agent_id]
         );
       }
@@ -33,7 +33,7 @@ module.exports = function ({ db, eventBus }) {
       if (!agent) return res.status(404).json({ error: 'Agent not found' });
       const tasks = await db.getMany(
         `SELECT id, title, status, priority, deadline FROM tasks
-         WHERE assigned_to_agent = $1 AND status IN ('todo','in_progress','blocked','unblocked')
+         WHERE assigned_to_agent = $1 AND status IN ('todo','in_progress','blocked','unblocked','waiting')
          ORDER BY priority ASC`, [req.params.id]
       );
       res.json({ agent, active_tasks: tasks });

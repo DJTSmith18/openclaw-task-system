@@ -321,6 +321,18 @@ function NudgeTab({ settings, onUpdate, onSave, onReset, dirty, saving, msg }) {
         </div>
       </div>
       <div style={{ borderTop: '1px solid var(--border)', marginTop: 20, paddingTop: 16 }}>
+        <div className="section-title" style={{ fontSize: 13 }}>Waiting for Response</div>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+          Remind agents to follow up on tasks waiting for external responses (e.g. SMS replies).
+        </p>
+        <div className="form-row">
+          <NumField label="First Nudge After (min)" value={s.nudge_waiting_minutes || 60} onChange={v => onUpdate('nudge', 'nudge_waiting_minutes', v)}
+            desc="Minutes waiting before first nudge to assigned agent" />
+          <NumField label="Repeat Interval (min)" value={s.nudge_waiting_interval_minutes || 60} onChange={v => onUpdate('nudge', 'nudge_waiting_interval_minutes', v)}
+            desc="Minutes between repeat waiting nudges" />
+        </div>
+      </div>
+      <div style={{ borderTop: '1px solid var(--border)', marginTop: 20, paddingTop: 16 }}>
         <div className="section-title" style={{ fontSize: 13 }}>Unstarted Tasks</div>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
           Remind agents who were dispatched a task but haven't started it yet.

@@ -25,7 +25,7 @@ CREATE TABLE tasks (
     title               TEXT NOT NULL,
     description         TEXT,
     status              TEXT NOT NULL DEFAULT 'todo'
-                        CHECK (status IN ('todo', 'in_progress', 'blocked', 'unblocked', 'done', 'cancelled')),
+                        CHECK (status IN ('todo', 'in_progress', 'blocked', 'unblocked', 'waiting', 'done', 'cancelled')),
     priority            INTEGER NOT NULL DEFAULT 3
                         CHECK (priority BETWEEN 1 AND 4),
                         -- 1=urgent, 2=high, 3=normal, 4=low
@@ -420,4 +420,5 @@ VALUES (1, 'Initial schema — 10 tables'),
        (5, '005_agent_hierarchy.sql — reports_to column'),
        (6, '006_default_escalation_rules.sql'),
        (7, '007_unblocked_status.sql'),
-       (8, '008_memory_system.sql');
+       (8, '008_memory_system.sql'),
+       (9, '009_waiting_status.sql');

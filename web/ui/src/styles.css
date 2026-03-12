@@ -104,6 +104,7 @@ tr:hover td { background: var(--bg-hover); }
 .badge-in_progress,.badge-in-progress { background: #1e3a1e; color: var(--green); }
 .badge-unblocked  { background: #2e3a1e; color: var(--yellow); }
 .badge-blocked    { background: #3a1e1e; color: var(--red); }
+.badge-waiting    { background: #3a2e1e; color: var(--orange); }
 .badge-done       { background: #1a2e1a; color: #6ee7b7; }
 .badge-cancelled  { background: #2a2a2a; color: var(--text-muted); }
 .badge-healthy    { background: #1e3a1e; color: var(--green); }

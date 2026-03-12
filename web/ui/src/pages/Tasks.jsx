@@ -4,7 +4,7 @@ import { useApi } from '../hooks/useApi';
 import { useSSE } from '../hooks/useSSE';
 import { api } from '../api';
 
-const STATUSES = ['', 'todo', 'in_progress', 'unblocked', 'blocked', 'done', 'cancelled'];
+const STATUSES = ['', 'todo', 'in_progress', 'unblocked', 'blocked', 'waiting', 'done', 'cancelled'];
 const PRIORITIES = [
   { value: '', label: 'All' },
   { value: '1', label: 'Urgent' },

@@ -39,7 +39,7 @@ module.exports = function ({ db, eventBus }) {
         `SELECT priority, COUNT(*) AS count FROM tasks WHERE status NOT IN ('done','cancelled') GROUP BY priority`
       );
       const overdue = await db.getCount(
-        `SELECT COUNT(*) AS count FROM tasks WHERE deadline < NOW() AND status IN ('todo','in_progress','blocked','unblocked')`
+        `SELECT COUNT(*) AS count FROM tasks WHERE deadline < NOW() AND status IN ('todo','in_progress','blocked','unblocked','waiting')`
       );
       const unassigned = await db.getCount(
         `SELECT COUNT(*) AS count FROM tasks WHERE assigned_to_agent IS NULL AND status IN ('todo','in_progress','unblocked')`
@@ -59,6 +59,38 @@ module.exports = function ({ db, eventBus }) {
         [`%${q}%`, Math.min(parseInt(limit), 200), parseInt(offset)]
       );
       res.json({ tasks, count: tasks.length });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Pending responses — tasks awaiting a reply from a specific contact (used by SMS plugins)
+  r.get('/tasks/pending-responses', async (req, res) => {
+    try {
+      const raw = (req.query.contact || '').replace(/\D/g, '').slice(-10);
+      if (raw.length < 10) return res.json({ tasks: [] });
+
+      const tasks = await db.getMany(
+        `SELECT t.id, t.title, t.status, t.priority, t.assigned_to_agent,
+                LEFT(t.description, 200) AS description
+         FROM tasks t
+         WHERE t.status IN ('waiting', 'blocked', 'in_progress')
+           AND t.metadata->>'awaiting_response_from' = $1
+         ORDER BY t.priority ASC, t.updated_at DESC
+         LIMIT 5`,
+        [raw]
+      );
+
+      for (const t of tasks) {
+        if (t.status === 'waiting' || t.status === 'blocked') {
+          const log = await db.getOne(
+            `SELECT notes FROM work_logs
+             WHERE task_id = $1 AND action = 'status_change'
+               AND status_to IN ('waiting', 'blocked')
+             ORDER BY created_at DESC LIMIT 1`, [t.id]);
+          t.note = log?.notes || null;
+        }
+      }
+
+      res.json({ tasks });
     } catch (err) { res.status(500).json({ error: err.message }); }
   });
 
