@@ -300,10 +300,14 @@ export default function Webhooks() {
   const { data: srcData, reload: reloadSrc } = useApi('/webhook-sources');
   const { data: tmplData, reload: reloadTmpl } = useApi('/webhook-templates');
   const { data: logData, reload: reloadLog } = useApi('/webhook-log?limit=100');
-  const reloadAll = () => { reloadSrc(); reloadTmpl(); reloadLog(); };
-  useSSE(reloadAll, ['webhook']);
   const [editSource, setEditSource] = useState(undefined);
   const [editTemplate, setEditTemplate] = useState(undefined);
+  const reloadAll = () => {
+    // Don't reload while a modal is open — incoming webhooks would reset the form
+    if (editSource !== undefined || editTemplate !== undefined) return;
+    reloadSrc(); reloadTmpl(); reloadLog();
+  };
+  useSSE(reloadAll, ['webhook']);
   const [templateVars, setTemplateVars] = useState({});
   const [viewEvent, setViewEvent] = useState(null);
 
