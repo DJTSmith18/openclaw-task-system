@@ -277,6 +277,42 @@ function EscalationTab({ settings, onUpdate, onSave, onReset, dirty, saving, msg
               placeholder="Phone number" desc="Recipient phone number or chat ID" />
           </div>
         </div>
+        <div style={{ borderTop: '1px solid var(--border)', margin: '16px 0', paddingTop: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Human Escalation Schedule</div>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+            Escalations and nudges are suppressed when the target is off-duty. Configure working hours for the human escalation target here.
+          </p>
+          <div className="form-row">
+            <StrField label="Working Hours Start" value={s.human_working_hours_start || '08:00'} onChange={v => onUpdate('escalation', 'human_working_hours_start', v)}
+              placeholder="HH:MM" desc="Start of working hours (24h format)" />
+            <StrField label="Working Hours End" value={s.human_working_hours_end || '17:00'} onChange={v => onUpdate('escalation', 'human_working_hours_end', v)}
+              placeholder="HH:MM" desc="End of working hours (24h format)" />
+          </div>
+          <StrField label="Timezone" value={s.human_timezone || 'America/Toronto'} onChange={v => onUpdate('escalation', 'human_timezone', v)}
+            placeholder="America/Toronto" desc="IANA timezone for working hours" />
+          <div style={{ marginTop: 8 }}>
+            <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>Working Days</label>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, idx) => {
+                const days = s.human_working_days || [1,2,3,4,5];
+                const active = days.includes(idx);
+                return (
+                  <button key={idx} type="button"
+                    onClick={() => {
+                      const next = active ? days.filter(d => d !== idx) : [...days, idx].sort();
+                      onUpdate('escalation', 'human_working_days', next);
+                    }}
+                    style={{
+                      padding: '4px 10px', borderRadius: 4, fontSize: 12, cursor: 'pointer',
+                      border: '1px solid var(--border)',
+                      background: active ? 'var(--accent)' : 'transparent',
+                      color: active ? '#fff' : 'var(--text-muted)',
+                    }}>{day}</button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
         <SectionSaveBar dirty={dirty} saving={saving} onSave={() => onSave('escalation')} onReset={() => onReset('escalation')} msg={msg} />
       </div>
       <SmsTestPanel />
