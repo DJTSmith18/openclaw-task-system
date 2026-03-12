@@ -2,7 +2,7 @@
   "id": "task-system",
   "name": "Task Orchestration System",
   "description": "Centralized task management, agent coordination, escalation, universal webhook-to-task automation, and a full web dashboard.",
-  "version": "1.0.40",
+  "version": "1.0.41",
   "kind": "tool",
   "configSchema": {
     "type": "object",
@@ -164,6 +164,23 @@
           "human_escalation_session": {
             "type": "string",
             "description": "Deprecated — ignored. Use human_escalation_channel instead."
+          },
+          "human_working_hours_start": {
+            "type": "string",
+            "description": "Start of human escalation window in HH:MM format (default: 08:00)"
+          },
+          "human_working_hours_end": {
+            "type": "string",
+            "description": "End of human escalation window in HH:MM format (default: 17:00)"
+          },
+          "human_working_days": {
+            "type": "array",
+            "items": { "type": "number" },
+            "description": "Days of week for human escalations (0=Sun..6=Sat, default: [1,2,3,4,5])"
+          },
+          "human_timezone": {
+            "type": "string",
+            "description": "IANA timezone for human escalation schedule (default: America/Toronto)"
           }
         }
       },
