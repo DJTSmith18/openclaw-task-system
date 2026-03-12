@@ -99,6 +99,7 @@ module.exports = function ({ db, eventBus }) {
     try {
       const b = req.body;
       if (!b.title) return res.status(400).json({ error: 'title required' });
+      if (!b.assigned_to_agent) return res.status(400).json({ error: 'assigned_to_agent required' });
       const task = await db.insert('tasks', {
         title: b.title, description: b.description || null,
         status: b.status || 'todo', priority: b.priority || 3,

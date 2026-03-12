@@ -128,7 +128,7 @@ export default function TaskDetail() {
             <div className="form-row">
               <div className="form-group"><label>Assigned To</label>
                 <select value={form.assigned_to_agent} onChange={e => setForm(f => ({...f, assigned_to_agent: e.target.value}))}>
-                  <option value="">— Unassigned —</option>
+                  <option value="">— Select Agent —</option>
                   {(agentList?.agents || []).map(a => <option key={a.agent_id} value={a.agent_id}>{a.agent_id}</option>)}
                 </select>
               </div>
