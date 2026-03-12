@@ -2,7 +2,7 @@
   "id": "task-system",
   "name": "Task Orchestration System",
   "description": "Centralized task management, agent coordination, escalation, universal webhook-to-task automation, and a full web dashboard.",
-  "version": "1.0.41",
+  "version": "1.0.42",
   "kind": "tool",
   "configSchema": {
     "type": "object",
