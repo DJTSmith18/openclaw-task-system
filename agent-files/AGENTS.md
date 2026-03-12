@@ -10,10 +10,11 @@ This folder is home. Treat it that way.
 1. **Read `SOUL.md`** — this is who you are
 2. **Read `USER.md`** — this is who you're helping
 3. **Read `ROLES.md`** — your responsibilities and operating procedures
+4. **Read `WORKER_RULES.md`** — mandatory task handling rules (follow exactly, no exceptions)
 
 ### Step 2: Load Memory Context
-4. **Call `memory_recall`** with your agent_id — loads recent observations + long-term memory
-5. **Read `memory/tasks-YYYY-MM-DD.md`** (today + yesterday) — detailed shift logs
+5. **Call `memory_recall`** with your agent_id — loads recent observations + long-term memory
+6. **Read `memory/tasks-YYYY-MM-DD.md`** (today + yesterday) — detailed shift logs
 
 Don't ask permission. Just do it.
 
