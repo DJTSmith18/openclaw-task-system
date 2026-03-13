@@ -99,6 +99,8 @@ function TemplateModal({ template, sources, vars, onClose, onSaved }) {
   function updateRule(i, field, val) {
     const rules = [...form.match_rules];
     rules[i] = { ...rules[i], [field]: val };
+    // Auto-set value to true when switching to "exists" operator
+    if (field === 'op' && val === 'exists') rules[i].value = true;
     set('match_rules', rules);
   }
   function removeRule(i) {
@@ -168,7 +170,10 @@ function TemplateModal({ template, sources, vars, onClose, onSaved }) {
                   <div className="form-group" style={{position:'relative'}}>
                     <label>Value</label>
                     <div style={{display:'flex',gap:4}}>
-                      <input value={typeof rule.value === 'object' ? JSON.stringify(rule.value) : rule.value} onChange={e => updateRule(i, 'value', e.target.value)} />
+                      {rule.op === 'exists'
+                        ? <span style={{padding:'6px 10px',color:'var(--text-muted)',fontSize:12}}>key exists</span>
+                        : <input value={typeof rule.value === 'object' ? JSON.stringify(rule.value) : rule.value} onChange={e => updateRule(i, 'value', e.target.value)} />
+                      }
                       <button className="btn btn-sm btn-danger" style={{padding:'4px 8px'}} onClick={() => removeRule(i)}>×</button>
                     </div>
                   </div>
