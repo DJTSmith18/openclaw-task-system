@@ -2,7 +2,22 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { useSSE } from '../hooks/useSSE';
+import { useSort } from '../hooks/useSort';
 import { api } from '../api';
+
+const LOG_COLUMNS = {
+  time: { key: 'created_at', type: 'date' },
+  agent: { key: 'agent_id', type: 'string' },
+  task: { key: 'task_id', type: 'number' },
+  action: { key: 'action', type: 'string' },
+  duration: { key: 'time_spent_minutes', type: 'number' },
+  notes: { key: 'notes', type: 'string' },
+};
+const REPORT_COLUMNS = {
+  agent: { key: 'agent_id', type: 'string' },
+  minutes: { key: 'total_minutes', type: 'number' },
+  entries: { key: 'entry_count', type: 'number' },
+};
 
 function timeAgo(ts) {
   if (!ts) return '';
@@ -70,6 +85,8 @@ export default function WorkLogs() {
   const { data: logData, loading, reload } = useApi(`/worklogs?${logParams}`, [agentFilter, taskFilter]);
   const { data: reportData } = useApi('/worklogs/report?group_by=agent');
   useSSE(reload, ['worklog']);
+  const { sorted: sortedLogs, SortTh } = useSort(logData?.worklogs || [], LOG_COLUMNS);
+  const { sorted: sortedReport, SortTh: ReportSortTh } = useSort(reportData?.report || [], REPORT_COLUMNS);
 
   return (
     <div>
@@ -93,10 +110,10 @@ export default function WorkLogs() {
           <div className="card">
             <div className="table-wrap">
               <table>
-                <thead><tr><th>Time</th><th>Agent</th><th>Task</th><th>Action</th><th>Duration</th><th>Notes</th></tr></thead>
+                <thead><tr><SortTh col="time">Time</SortTh><SortTh col="agent">Agent</SortTh><SortTh col="task">Task</SortTh><SortTh col="action">Action</SortTh><SortTh col="duration">Duration</SortTh><SortTh col="notes">Notes</SortTh></tr></thead>
                 <tbody>
                   {loading && <tr><td colSpan={6} className="loading">Loading...</td></tr>}
-                  {!loading && (logData?.worklogs || []).map(w => (
+                  {!loading && sortedLogs.map(w => (
                     <tr key={w.id}>
                       <td style={{fontSize:12,color:'var(--text-muted)',whiteSpace:'nowrap'}}>{timeAgo(w.created_at)}</td>
                       <td><code>{w.agent_id}</code></td>
@@ -119,9 +136,9 @@ export default function WorkLogs() {
       {tab === 'report' && (
         <div className="card">
           <table>
-            <thead><tr><th>Agent</th><th>Total Minutes</th><th>Entries</th></tr></thead>
+            <thead><tr><ReportSortTh col="agent">Agent</ReportSortTh><ReportSortTh col="minutes">Total Minutes</ReportSortTh><ReportSortTh col="entries">Entries</ReportSortTh></tr></thead>
             <tbody>
-              {(reportData?.report || []).map((r, i) => (
+              {sortedReport.map((r, i) => (
                 <tr key={i}>
                   <td><code>{r.agent_id || r.group_key}</code></td>
                   <td><strong>{r.total_minutes || 0}</strong></td>

@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useSSE } from '../hooks/useSSE';
+import { useSort } from '../hooks/useSort';
 import { api } from '../api';
 import ScheduleBuilder, { describeCron } from '../components/ScheduleBuilder';
+
+const CRON_COLUMNS = {
+  type: { key: '_type', type: 'string' },
+  name: { key: 'name', type: 'string' },
+  enabled: { key: 'enabled', type: 'string' },
+};
 
 function formatSchedule(sched) {
   if (!sched) return '—';
@@ -260,6 +267,7 @@ export default function CronJobs() {
   const agentJobs = (cronData?.jobs || []).map(j => ({ ...j, _type: 'agent' }));
   const templates = (tmplData?.templates || []).map(t => ({ ...t, _type: 'template' }));
   const allItems = [...agentJobs, ...templates];
+  const { sorted: sortedItems, SortTh } = useSort(allItems, CRON_COLUMNS);
 
   function reload() { cronReload(); tmplReload(); }
 
@@ -273,9 +281,9 @@ export default function CronJobs() {
       <div className="card">
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Type</th><th>Name</th><th>Schedule</th><th>Details</th><th>Enabled</th><th>Actions</th></tr></thead>
+            <thead><tr><SortTh col="type">Type</SortTh><SortTh col="name">Name</SortTh><th>Schedule</th><th>Details</th><SortTh col="enabled">Enabled</SortTh><th>Actions</th></tr></thead>
             <tbody>
-              {allItems.map(item => {
+              {sortedItems.map(item => {
                 const isAgent = item._type === 'agent';
                 const schedule = isAgent ? formatSchedule(item.schedule) : item.schedule_expr;
                 const scheduleDesc = isAgent ? '' : describeCron(item.schedule_expr);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { useSSE } from '../hooks/useSSE';
+import { useSort } from '../hooks/useSort';
 import { api } from '../api';
 
 const STATUSES = ['', 'todo', 'in_progress', 'unblocked', 'blocked', 'waiting', 'done', 'cancelled'];
@@ -74,6 +75,17 @@ function CreateTaskModal({ onClose, onCreated }) {
   );
 }
 
+const TASK_COLUMNS = {
+  id: { key: 'id', type: 'number' },
+  title: { key: 'title', type: 'string' },
+  status: { key: 'status', type: 'string' },
+  priority: { key: 'priority', type: 'number' },
+  category: { key: 'category', type: 'string' },
+  assigned: { key: 'assigned_to_agent', type: 'string' },
+  deadline: { key: 'deadline', type: 'date' },
+  updated: { key: 'updated_at', type: 'date' },
+};
+
 export default function Tasks() {
   const [status, setStatus] = useState('');
   const [priority, setPriority] = useState('');
@@ -89,6 +101,7 @@ export default function Tasks() {
 
   const { data, loading, error, reload } = useApi(`/tasks?${params}`, [status, priority, search]);
   useSSE(reload, ['task']);
+  const { sorted: sortedTasks, SortTh } = useSort(data?.tasks || [], TASK_COLUMNS);
 
   return (
     <div>
@@ -116,13 +129,15 @@ export default function Tasks() {
           <table>
             <thead>
               <tr>
-                <th>ID</th><th>Title</th><th>Status</th><th>Priority</th>
-                <th>Category</th><th>Assigned To</th><th>Deadline</th><th>Updated</th>
+                <SortTh col="id">ID</SortTh><SortTh col="title">Title</SortTh>
+                <SortTh col="status">Status</SortTh><SortTh col="priority">Priority</SortTh>
+                <SortTh col="category">Category</SortTh><SortTh col="assigned">Assigned To</SortTh>
+                <SortTh col="deadline">Deadline</SortTh><SortTh col="updated">Updated</SortTh>
               </tr>
             </thead>
             <tbody>
               {loading && <tr><td colSpan={8} className="loading">Loading...</td></tr>}
-              {!loading && (data?.tasks || []).map(t => (
+              {!loading && sortedTasks.map(t => (
                 <tr key={t.id} className="clickable" onClick={() => navigate(`/tasks/${t.id}`)}>
                   <td>{t.id}</td>
                   <td><strong>{t.title}</strong></td>

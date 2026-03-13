@@ -2,7 +2,32 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { useSSE } from '../hooks/useSSE';
+import { useSort } from '../hooks/useSort';
 import { api } from '../api';
+
+const ACTIVE_COLUMNS = {
+  task: { key: 'task_id', type: 'number' },
+  trigger: { key: 'trigger_condition', type: 'string' },
+  to: { key: 'to_agent', type: 'string' },
+  reason: { key: 'message_sent', type: 'string' },
+  status: { key: 'status', type: 'string' },
+  triggered: { key: 'created_at', type: 'date' },
+};
+const RULE_COLUMNS = {
+  name: { key: 'name', type: 'string' },
+  trigger: { key: 'trigger_condition', type: 'string' },
+  from: { key: 'from_agent', type: 'string' },
+  to: { key: 'to_agent', type: 'string' },
+  threshold: { key: 'timeout_minutes', type: 'number' },
+};
+const HISTORY_COLUMNS = {
+  task: { key: 'task_id', type: 'number' },
+  trigger: { key: 'trigger_condition', type: 'string' },
+  from: { key: 'from_agent', type: 'string' },
+  to: { key: 'to_agent', type: 'string' },
+  status: { key: 'status', type: 'string' },
+  time: { key: 'created_at', type: 'date' },
+};
 
 const TRIGGER_META = {
   timeout:              { label: 'Task Stuck',         desc: 'Task stays in progress too long',       thresholdLabel: 'Minutes in progress before escalating' },
@@ -107,7 +132,11 @@ export default function Escalations() {
   const [editRule, setEditRule] = useState(undefined); // undefined=closed, null=new
 
   const active = (histData?.escalations || []).filter(e => e.status === 'pending' || e.status === 'acknowledged');
-  const resolved = (histData?.escalations || []).filter(e => e.status === 'resolved');
+  const allEscalations = histData?.escalations || [];
+
+  const { sorted: sortedActive, SortTh: ActiveSortTh } = useSort(active, ACTIVE_COLUMNS);
+  const { sorted: sortedRules, SortTh: RuleSortTh } = useSort(rulesData?.rules || [], RULE_COLUMNS);
+  const { sorted: sortedHistory, SortTh: HistSortTh } = useSort(allEscalations, HISTORY_COLUMNS);
 
   async function ack(id) { await api.post(`/escalations/${id}/ack`, {}); reloadHist(); }
   async function resolve(id) { await api.post(`/escalations/${id}/resolve`, {}); reloadHist(); }
@@ -130,9 +159,9 @@ export default function Escalations() {
         <div className="card">
           {active.length === 0 ? <div className="empty">No active escalations</div> : (
             <table>
-              <thead><tr><th>Task</th><th>Trigger</th><th>Escalated To</th><th>Reason</th><th>Status</th><th>Triggered</th><th>Actions</th></tr></thead>
+              <thead><tr><ActiveSortTh col="task">Task</ActiveSortTh><ActiveSortTh col="trigger">Trigger</ActiveSortTh><ActiveSortTh col="to">Escalated To</ActiveSortTh><th>Reason</th><ActiveSortTh col="status">Status</ActiveSortTh><ActiveSortTh col="triggered">Triggered</ActiveSortTh><th>Actions</th></tr></thead>
               <tbody>
-                {active.map(e => (
+                {sortedActive.map(e => (
                   <tr key={e.id}>
                     <td><Link to={`/tasks/${e.task_id}`}>{e.task_title || `#${e.task_id}`}</Link></td>
                     <td><span className="tag">{triggerLabel(e.trigger_condition)}</span></td>
@@ -155,9 +184,9 @@ export default function Escalations() {
       {tab === 'rules' && (
         <div className="card">
           <table>
-            <thead><tr><th>Name</th><th>Trigger</th><th>Only for agent</th><th>Escalate to</th><th>Threshold</th><th>Enabled</th><th>Actions</th></tr></thead>
+            <thead><tr><RuleSortTh col="name">Name</RuleSortTh><RuleSortTh col="trigger">Trigger</RuleSortTh><RuleSortTh col="from">Only for agent</RuleSortTh><RuleSortTh col="to">Escalate to</RuleSortTh><RuleSortTh col="threshold">Threshold</RuleSortTh><th>Enabled</th><th>Actions</th></tr></thead>
             <tbody>
-              {(rulesData?.rules || []).map(r => (
+              {sortedRules.map(r => (
                 <tr key={r.id}>
                   <td><strong>{r.name}</strong></td>
                   <td><span className="tag">{triggerLabel(r.trigger_condition)}</span></td>
@@ -180,9 +209,9 @@ export default function Escalations() {
       {tab === 'history' && (
         <div className="card">
           <table>
-            <thead><tr><th>Task</th><th>Trigger</th><th>From</th><th>To</th><th>Reason</th><th>Status</th><th>Time</th></tr></thead>
+            <thead><tr><HistSortTh col="task">Task</HistSortTh><HistSortTh col="trigger">Trigger</HistSortTh><HistSortTh col="from">From</HistSortTh><HistSortTh col="to">To</HistSortTh><th>Reason</th><HistSortTh col="status">Status</HistSortTh><HistSortTh col="time">Time</HistSortTh></tr></thead>
             <tbody>
-              {(histData?.escalations || []).map(e => (
+              {sortedHistory.map(e => (
                 <tr key={e.id}>
                   <td><Link to={`/tasks/${e.task_id}`}>{e.task_title || `#${e.task_id}`}</Link></td>
                   <td><span className="tag">{triggerLabel(e.trigger_condition)}</span></td>

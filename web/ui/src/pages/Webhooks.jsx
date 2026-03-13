@@ -2,7 +2,22 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { useSSE } from '../hooks/useSSE';
+import { useSort } from '../hooks/useSort';
 import { api } from '../api';
+
+const TMPL_COLUMNS = {
+  name: { key: 'name', type: 'string' },
+  source: { key: 'source_name', type: 'string' },
+  category: { key: 'task_category', type: 'string' },
+  assigned: { key: 'assigned_to_agent', type: 'string' },
+};
+const LOG_COLUMNS = {
+  time: { key: 'created_at', type: 'date' },
+  source: { key: 'source_name', type: 'string' },
+  status: { key: 'processing_status', type: 'string' },
+  template: { key: 'matched_template_id', type: 'number' },
+  task: { key: 'created_task_id', type: 'number' },
+};
 
 function timeAgo(ts) {
   if (!ts) return '';
@@ -320,6 +335,9 @@ export default function Webhooks() {
   const templates = tmplData?.templates || [];
   const events = logData?.events || [];
   const unmatched = events.filter(e => e.processing_status === 'unmatched');
+  const { sorted: sortedTemplates, SortTh: TmplSortTh } = useSort(templates, TMPL_COLUMNS);
+  const { sorted: sortedEvents, SortTh: LogSortTh } = useSort(events, LOG_COLUMNS);
+  const { sorted: sortedUnmatched, SortTh: UnmSortTh } = useSort(unmatched, LOG_COLUMNS);
 
   async function deleteSource(id) { if (confirm('Delete this source?')) { await api.delete(`/webhook-sources/${id}`); reloadSrc(); } }
   async function deleteTemplate(id) { if (confirm('Delete this template?')) { await api.delete(`/webhook-templates/${id}`); reloadTmpl(); } }
@@ -394,9 +412,9 @@ export default function Webhooks() {
           <div className="card">
             <div className="table-wrap">
               <table>
-                <thead><tr><th>Name</th><th>Source</th><th>Rules</th><th>Title Template</th><th>Category</th><th>Assigned</th><th>Enabled</th><th>Actions</th></tr></thead>
+                <thead><tr><TmplSortTh col="name">Name</TmplSortTh><TmplSortTh col="source">Source</TmplSortTh><th>Rules</th><th>Title Template</th><TmplSortTh col="category">Category</TmplSortTh><TmplSortTh col="assigned">Assigned</TmplSortTh><th>Enabled</th><th>Actions</th></tr></thead>
                 <tbody>
-                  {templates.map(t => {
+                  {sortedTemplates.map(t => {
                     const rules = typeof t.match_rules === 'string' ? JSON.parse(t.match_rules) : (t.match_rules || []);
                     return (
                       <tr key={t.id}>
@@ -440,9 +458,9 @@ export default function Webhooks() {
           <div className="card">
             <div className="table-wrap">
               <table>
-                <thead><tr><th>Time</th><th>Source</th><th>Event</th><th>Variables</th><th>Actions</th></tr></thead>
+                <thead><tr><UnmSortTh col="time">Time</UnmSortTh><UnmSortTh col="source">Source</UnmSortTh><th>Event</th><th>Variables</th><th>Actions</th></tr></thead>
                 <tbody>
-                  {unmatched.map(e => {
+                  {sortedUnmatched.map(e => {
                     const vars = e.flattened_vars || (typeof e.payload === 'object' ? flattenObj(e.payload) : {});
                     const varKeys = Object.keys(vars);
                     return (
@@ -473,9 +491,9 @@ export default function Webhooks() {
           <div className="card">
             <div className="table-wrap">
               <table>
-                <thead><tr><th>Time</th><th>Source</th><th>Status</th><th>Template</th><th>Task</th><th>Actions</th></tr></thead>
+                <thead><tr><LogSortTh col="time">Time</LogSortTh><LogSortTh col="source">Source</LogSortTh><LogSortTh col="status">Status</LogSortTh><LogSortTh col="template">Template</LogSortTh><LogSortTh col="task">Task</LogSortTh><th>Actions</th></tr></thead>
                 <tbody>
-                  {events.map(e => (
+                  {sortedEvents.map(e => (
                     <tr key={e.id}>
                       <td style={{fontSize:12,color:'var(--text-muted)',whiteSpace:'nowrap'}}>{timeAgo(e.created_at)}</td>
                       <td>{e.source_name || `#${e.source_id}`}</td>

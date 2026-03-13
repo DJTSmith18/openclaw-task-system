@@ -1,5 +1,27 @@
 import React, { useState } from 'react';
 import { useApi } from '../hooks/useApi';
+import { useSort } from '../hooks/useSort';
+
+const OBS_COLUMNS = {
+  importance: { key: 'importance', type: 'number' },
+  agent: { key: 'agent_id', type: 'string' },
+  source: { key: 'source', type: 'string' },
+  type: { key: 'obs_type', type: 'string' },
+  content: { key: 'content', type: 'string' },
+  created: { key: 'created_at', type: 'date' },
+};
+const DREAM_COLUMNS = {
+  agent: { key: 'agent_id', type: 'string' },
+  type: { key: 'cycle_type', type: 'string' },
+  before: { key: 'observations_before', type: 'number' },
+  after: { key: 'observations_after', type: 'number' },
+  archived: { key: 'archived_count', type: 'number' },
+  decayed: { key: 'decayed_count', type: 'number' },
+  promoted: { key: 'promoted_count', type: 'number' },
+  insights: { key: 'insights_generated', type: 'number' },
+  duration: { key: 'duration_ms', type: 'number' },
+  when: { key: 'created_at', type: 'date' },
+};
 
 function timeAgo(ts) {
   if (!ts) return '\u2014';
@@ -25,6 +47,7 @@ function ObservationsTab({ agentId }) {
   if (error) return <div className="error">{error}</div>;
 
   const obs = data?.observations || [];
+  const { sorted: sortedObs, SortTh } = useSort(obs, OBS_COLUMNS);
 
   return (
     <div>
@@ -35,17 +58,17 @@ function ObservationsTab({ agentId }) {
       <table>
         <thead>
           <tr>
-            <th style={{ width: 60 }}>Imp.</th>
-            <th style={{ width: 100 }}>Agent</th>
-            <th style={{ width: 100 }}>Source</th>
-            <th style={{ width: 80 }}>Type</th>
-            <th>Content</th>
+            <SortTh col="importance" style={{ width: 60 }}>Imp.</SortTh>
+            <SortTh col="agent" style={{ width: 100 }}>Agent</SortTh>
+            <SortTh col="source" style={{ width: 100 }}>Source</SortTh>
+            <SortTh col="type" style={{ width: 80 }}>Type</SortTh>
+            <SortTh col="content">Content</SortTh>
             <th style={{ width: 80 }}>Tags</th>
-            <th style={{ width: 100 }}>Created</th>
+            <SortTh col="created" style={{ width: 100 }}>Created</SortTh>
           </tr>
         </thead>
         <tbody>
-          {obs.map(o => (
+          {sortedObs.map(o => (
             <tr key={o.id} style={{ cursor: 'pointer' }} onClick={() => setExpanded(expanded === o.id ? null : o.id)}>
               <td>{importanceBadge(o.importance)}</td>
               <td style={{ fontSize: 12 }}>{o.agent_id}</td>
@@ -118,6 +141,7 @@ function DreamLogTab({ agentId }) {
   if (error) return <div className="error">{error}</div>;
 
   const logs = data?.logs || [];
+  const { sorted: sortedLogs, SortTh } = useSort(logs, DREAM_COLUMNS);
 
   return (
     <div>
@@ -128,20 +152,20 @@ function DreamLogTab({ agentId }) {
       <table>
         <thead>
           <tr>
-            <th>Agent</th>
-            <th>Type</th>
-            <th>Before</th>
-            <th>After</th>
-            <th>Archived</th>
-            <th>Decayed</th>
-            <th>Promoted</th>
-            <th>Insights</th>
-            <th>Duration</th>
-            <th>When</th>
+            <SortTh col="agent">Agent</SortTh>
+            <SortTh col="type">Type</SortTh>
+            <SortTh col="before">Before</SortTh>
+            <SortTh col="after">After</SortTh>
+            <SortTh col="archived">Archived</SortTh>
+            <SortTh col="decayed">Decayed</SortTh>
+            <SortTh col="promoted">Promoted</SortTh>
+            <SortTh col="insights">Insights</SortTh>
+            <SortTh col="duration">Duration</SortTh>
+            <SortTh col="when">When</SortTh>
           </tr>
         </thead>
         <tbody>
-          {logs.map(l => (
+          {sortedLogs.map(l => (
             <tr key={l.id}>
               <td style={{ fontSize: 12 }}>{l.agent_id}</td>
               <td style={{ fontSize: 12 }}>{l.cycle_type}</td>
