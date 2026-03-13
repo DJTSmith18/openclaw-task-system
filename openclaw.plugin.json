@@ -228,6 +228,14 @@
             "type": "number",
             "description": "Minutes between repeat unstarted nudges (default: 10)"
           },
+          "nudge_waiting_minutes": {
+            "type": "number",
+            "description": "Minutes before first nudge for tasks in waiting status (default: 60)"
+          },
+          "nudge_waiting_interval_minutes": {
+            "type": "number",
+            "description": "Minutes between repeat waiting nudges (default: 60)"
+          },
           "max_nudges": {
             "type": "number",
             "description": "Maximum nudges per task before stopping (escalation takes over) (default: 5)"
