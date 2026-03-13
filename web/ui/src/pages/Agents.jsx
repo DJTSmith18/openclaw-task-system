@@ -20,16 +20,26 @@ const DEFAULT_SWEEP_TOOLS = [
 ];
 
 
-function MemoryConfigPanel({ mem, setMem, allowedTools }) {
+function MemoryConfigPanel({ mem, setMem, allowedTools, agentId }) {
   const enabled = mem.enabled || false;
   const dream = mem.dream || {};
   const rum = mem.rumination || {};
   const sweep = mem.sensor_sweep || {};
   const sweepTools = sweep.tools || DEFAULT_SWEEP_TOOLS;
+  const [triggering, setTriggering] = useState(null); // 'dream' | 'rumination' | 'sensor_sweep'
 
   const update = (section, key, val) => {
     setMem(prev => ({ ...prev, [section]: { ...prev[section], [key]: val } }));
   };
+
+  async function triggerCycle(cycleType) {
+    if (!agentId) return;
+    setTriggering(cycleType);
+    try {
+      await api.post(`/agents/${encodeURIComponent(agentId)}/trigger-cycle`, { cycle: cycleType });
+    } catch (e) { alert('Trigger failed: ' + e.message); }
+    finally { setTriggering(null); }
+  }
 
   // Sensor sweep tool helpers — index-based to support duplicate tool names
   function addSweepTool(toolName) {
@@ -69,17 +79,25 @@ function MemoryConfigPanel({ mem, setMem, allowedTools }) {
           <div style={{ background: 'var(--bg-secondary)', borderRadius: 8, padding: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <span style={{ fontSize: 13, fontWeight: 600 }}>Dream Cycle</span>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12 }}>
-                <input type="checkbox" checked={dream.enabled !== false} onChange={e => update('dream', 'enabled', e.target.checked)} />
-                {dream.enabled !== false ? 'On' : 'Off'}
-              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {agentId && dream.enabled !== false && (
+                  <button className="btn btn-sm" style={{ fontSize: 10, padding: '2px 8px' }}
+                    disabled={triggering === 'dream'} onClick={() => triggerCycle('dream')}>
+                    {triggering === 'dream' ? 'Triggering...' : 'Run Now'}
+                  </button>
+                )}
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12 }}>
+                  <input type="checkbox" checked={dream.enabled !== false} onChange={e => update('dream', 'enabled', e.target.checked)} />
+                  {dream.enabled !== false ? 'On' : 'Off'}
+                </label>
+              </div>
             </div>
             {dream.enabled !== false && (
               <div style={{ display: 'grid', gap: 6, fontSize: 12 }}>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <div style={{ flex: 1 }}>
-                    <label>Schedule</label>
-                    <input value={dream.schedule || '0 3 * * *'} onChange={e => update('dream', 'schedule', e.target.value)} style={{ fontSize: 12 }} />
+                    <label>Run at (daily)</label>
+                    <input type="time" value={dream.run_at || '03:00'} onChange={e => update('dream', 'run_at', e.target.value)} style={{ fontSize: 12 }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <label>Max Observations</label>
@@ -116,17 +134,25 @@ function MemoryConfigPanel({ mem, setMem, allowedTools }) {
           <div style={{ background: 'var(--bg-secondary)', borderRadius: 8, padding: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <span style={{ fontSize: 13, fontWeight: 600 }}>Rumination</span>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12 }}>
-                <input type="checkbox" checked={rum.enabled !== false} onChange={e => update('rumination', 'enabled', e.target.checked)} />
-                {rum.enabled !== false ? 'On' : 'Off'}
-              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {agentId && rum.enabled !== false && (
+                  <button className="btn btn-sm" style={{ fontSize: 10, padding: '2px 8px' }}
+                    disabled={triggering === 'rumination'} onClick={() => triggerCycle('rumination')}>
+                    {triggering === 'rumination' ? 'Triggering...' : 'Run Now'}
+                  </button>
+                )}
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12 }}>
+                  <input type="checkbox" checked={rum.enabled !== false} onChange={e => update('rumination', 'enabled', e.target.checked)} />
+                  {rum.enabled !== false ? 'On' : 'Off'}
+                </label>
+              </div>
             </div>
             {rum.enabled !== false && (
               <div style={{ display: 'grid', gap: 6, fontSize: 12 }}>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <div style={{ flex: 1 }}>
-                    <label>Schedule</label>
-                    <input value={rum.schedule || '0 */4 * * *'} onChange={e => update('rumination', 'schedule', e.target.value)} style={{ fontSize: 12 }} />
+                    <label>Every (hours)</label>
+                    <input type="number" min="1" value={Math.round((rum.interval_minutes || 240) / 60)} onChange={e => update('rumination', 'interval_minutes', (parseInt(e.target.value) || 4) * 60)} style={{ fontSize: 12 }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <label>Escalation Threshold</label>
@@ -158,17 +184,25 @@ function MemoryConfigPanel({ mem, setMem, allowedTools }) {
           <div style={{ background: 'var(--bg-secondary)', borderRadius: 8, padding: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <span style={{ fontSize: 13, fontWeight: 600 }}>Sensor Sweep</span>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12 }}>
-                <input type="checkbox" checked={sweep.enabled !== false} onChange={e => update('sensor_sweep', 'enabled', e.target.checked)} />
-                {sweep.enabled !== false ? 'On' : 'Off'}
-              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {agentId && sweep.enabled !== false && (
+                  <button className="btn btn-sm" style={{ fontSize: 10, padding: '2px 8px' }}
+                    disabled={triggering === 'sensor_sweep'} onClick={() => triggerCycle('sensor_sweep')}>
+                    {triggering === 'sensor_sweep' ? 'Triggering...' : 'Run Now'}
+                  </button>
+                )}
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12 }}>
+                  <input type="checkbox" checked={sweep.enabled !== false} onChange={e => update('sensor_sweep', 'enabled', e.target.checked)} />
+                  {sweep.enabled !== false ? 'On' : 'Off'}
+                </label>
+              </div>
             </div>
             {sweep.enabled !== false && (
               <div style={{ display: 'grid', gap: 6, fontSize: 12 }}>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <div style={{ flex: 1 }}>
-                    <label>Schedule</label>
-                    <input value={sweep.schedule || '0 */2 * * *'} onChange={e => update('sensor_sweep', 'schedule', e.target.value)} style={{ fontSize: 12 }} />
+                    <label>Every (minutes)</label>
+                    <input type="number" min="5" value={sweep.interval_minutes || 120} onChange={e => update('sensor_sweep', 'interval_minutes', parseInt(e.target.value) || 120)} style={{ fontSize: 12 }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <label>Timeout (sec)</label>
@@ -320,7 +354,7 @@ function AgentModal({ agent, onClose, onSaved, allAgentIds }) {
           </select>
         </div>
 
-        <MemoryConfigPanel mem={memCfg} setMem={setMemCfg} allowedTools={allowedTools} />
+        <MemoryConfigPanel mem={memCfg} setMem={setMemCfg} allowedTools={allowedTools} agentId={isNew ? null : agent?.agent_id} />
 
         <div className="modal-actions">
           <button onClick={onClose}>Cancel</button>

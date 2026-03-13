@@ -20,11 +20,11 @@ const DEFAULTS = {
     max_nudges: 5,
   },
   memory: {
-    dream_schedule: '0 3 * * *', dream_decay_enabled: true, dream_archive_enabled: true,
+    dream_run_at: '03:00', dream_decay_enabled: true, dream_archive_enabled: true,
     dream_pattern_lookback_days: 7, dream_pattern_min_occurrences: 3, dream_pattern_min_unique_days: 3,
     dream_max_active_observations: 500,
-    rumination_schedule: '0 */4 * * *', rumination_max_importance_for_escalation: 8.5,
-    sensor_sweep_schedule: '0 */2 * * *', sensor_sweep_timeout_seconds: 120,
+    rumination_interval_minutes: 240, rumination_max_importance_for_escalation: 8.5,
+    sensor_sweep_interval_minutes: 120, sensor_sweep_timeout_seconds: 120,
   },
 };
 
@@ -49,11 +49,11 @@ const VALIDATORS = {
     max_nudges: 'posint',
   },
   memory: {
-    dream_schedule: 'string', dream_decay_enabled: 'boolean', dream_archive_enabled: 'boolean',
+    dream_run_at: 'string', dream_decay_enabled: 'boolean', dream_archive_enabled: 'boolean',
     dream_pattern_lookback_days: 'posint', dream_pattern_min_occurrences: 'posint', dream_pattern_min_unique_days: 'posint',
     dream_max_active_observations: 'posint',
-    rumination_schedule: 'string', rumination_max_importance_for_escalation: 'number',
-    sensor_sweep_schedule: 'string', sensor_sweep_timeout_seconds: 'posint',
+    rumination_interval_minutes: 'posint', rumination_max_importance_for_escalation: 'number',
+    sensor_sweep_interval_minutes: 'posint', sensor_sweep_timeout_seconds: 'posint',
   },
 };
 

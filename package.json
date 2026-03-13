@@ -1,6 +1,6 @@
 {
   "name": "openclaw-task-system",
-  "version": "1.0.33",
+  "version": "1.0.34",
   "description": "OpenClaw Task Orchestration System plugin",
   "main": "index.js",
   "scripts": {

@@ -243,7 +243,7 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "schedule": { "type": "string", "description": "Cron expression for dream cycle (default: 0 3 * * *)" },
+              "run_at": { "type": "string", "description": "Time to run dream cycle daily in HH:MM format (default: 03:00)" },
               "decay_enabled": { "type": "boolean", "description": "Enable importance decay (default: true)" },
               "archive_enabled": { "type": "boolean", "description": "Enable auto-archival (default: true)" },
               "pattern_lookback_days": { "type": "number", "description": "Days to look back for pattern detection (default: 7)" },
@@ -256,7 +256,7 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "schedule": { "type": "string", "description": "Cron expression for rumination (default: 0 */4 * * *)" },
+              "interval_minutes": { "type": "number", "description": "Interval in minutes between rumination cycles (default: 240 = 4h)" },
               "threads": { "type": "array", "items": { "type": "string" }, "description": "Cognitive threads (default: [observation, reasoning, memory, planning])" },
               "max_importance_for_escalation": { "type": "number", "description": "Importance threshold to auto-escalate insights (default: 8.5)" }
             }
@@ -265,7 +265,7 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "schedule": { "type": "string", "description": "Cron expression for sensor sweep (default: 0 */2 * * *)" },
+              "interval_minutes": { "type": "number", "description": "Interval in minutes between sensor sweeps (default: 120 = 2h)" },
               "timeout_seconds": { "type": "number", "description": "Agent session timeout (default: 120)" },
               "tools": {
                 "type": "array",

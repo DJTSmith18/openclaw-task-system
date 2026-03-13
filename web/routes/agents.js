@@ -1,5 +1,6 @@
 'use strict';
 const { Router } = require('express');
+const memoryTimer = require('../../lib/memory-timer');
 
 module.exports = function ({ db, eventBus }) {
   const r = Router();
@@ -84,6 +85,25 @@ module.exports = function ({ db, eventBus }) {
         if (eventBus) eventBus.emit('agent', { action: 'status_changed', id: req.params.id });
         res.status(201).json(row);
       }
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Trigger a memory cycle immediately (uses shared memory-timer module)
+  r.post('/agents/:id/trigger-cycle', async (req, res) => {
+    try {
+      const { cycle } = req.body;
+      if (!['dream', 'rumination', 'sensor_sweep'].includes(cycle)) {
+        return res.status(400).json({ error: 'cycle must be dream, rumination, or sensor_sweep' });
+      }
+      const agent = await db.getOne('SELECT * FROM agent_availability WHERE agent_id = $1', [req.params.id]);
+      if (!agent) return res.status(404).json({ error: 'Agent not found' });
+
+      const mem = agent.metadata?.memory || {};
+      if (!mem.enabled) return res.status(400).json({ error: 'Memory not enabled for this agent' });
+
+      // Fire and forget
+      memoryTimer.triggerCycle(req.params.id, cycle).catch(() => {});
+      res.json({ triggered: true, cycle, agent_id: req.params.id });
     } catch (err) { res.status(500).json({ error: err.message }); }
   });
 
