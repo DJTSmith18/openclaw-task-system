@@ -236,16 +236,16 @@ a:hover { text-decoration: underline; }
 .var-list {
   background: var(--bg-input); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 12px;
-  max-height: 300px; overflow-y: auto;
+  max-height: 60vh; overflow-y: auto;
 }
 .var-item {
-  display: flex; justify-content: space-between; align-items: center;
+  display: flex; flex-direction: column; gap: 1px;
   padding: 4px 8px; border-radius: 4px; cursor: pointer;
   font-size: 12px; font-family: monospace;
 }
 .var-item:hover { background: var(--bg-hover); }
-.var-item .var-name { color: var(--accent); }
-.var-item .var-value { color: var(--text-muted); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.var-item .var-name { color: var(--accent); font-size: 11px; }
+.var-item .var-value { color: var(--text-muted); font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* === Toggle === */
 .toggle {

@@ -84,10 +84,10 @@ function SourceModal({ source, onClose, onSaved }) {
 }
 
 // ── Sidebar Panel (Variables + Syntax Reference) ────────────────────────────
-function SidebarPanel({ allVars, insertVar }) {
+function SidebarPanel({ allVars, insertVar, rawPayload }) {
   const [sideTab, setSideTab] = useState('vars');
   const sideTabStyle = (id) => ({
-    padding: '6px 12px', fontSize: 12, fontWeight: sideTab === id ? 600 : 400,
+    padding: '6px 10px', fontSize: 11, fontWeight: sideTab === id ? 600 : 400,
     color: sideTab === id ? 'var(--accent)' : 'var(--text-dim)',
     background: 'transparent', border: 'none', cursor: 'pointer',
     borderBottom: sideTab === id ? '2px solid var(--accent)' : '2px solid transparent',
@@ -98,7 +98,8 @@ function SidebarPanel({ allVars, insertVar }) {
     <div>
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 10 }}>
         <button style={sideTabStyle('vars')} onClick={() => setSideTab('vars')}>Variables</button>
-        <button style={sideTabStyle('ref')} onClick={() => setSideTab('ref')}>Syntax Reference</button>
+        <button style={sideTabStyle('ref')} onClick={() => setSideTab('ref')}>Syntax</button>
+        <button style={sideTabStyle('raw')} onClick={() => setSideTab('raw')}>Raw Payload</button>
       </div>
 
       {sideTab === 'vars' && (
@@ -107,10 +108,10 @@ function SidebarPanel({ allVars, insertVar }) {
             {Object.keys(allVars).length === 0 ? (
               <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: 8 }}>No variables available. Send a webhook event first, then create a template from the Unmatched tab.</div>
             ) : (
-              Object.entries(allVars).map(([k, v]) => (
+              Object.entries(allVars).filter(([, v]) => !Array.isArray(v)).map(([k, v]) => (
                 <div key={k} className="var-item" onClick={() => insertVar(k)} title={`Click to insert {{${k}}}`}>
                   <span className="var-name">{k}</span>
-                  <span className="var-value">{typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 80)}</span>
+                  <span className="var-value">{String(v)}</span>
                 </div>
               ))
             )}
@@ -120,7 +121,7 @@ function SidebarPanel({ allVars, insertVar }) {
       )}
 
       {sideTab === 'ref' && (
-        <div style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-dim)' }}>
+        <div style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-dim)', maxHeight: '60vh', overflowY: 'auto' }}>
           <div style={{ marginBottom: 12 }}>
             <strong style={{ color: 'var(--text)' }}>Simple Variable</strong>
             <pre style={{ margin: '4px 0', padding: 8, background: 'var(--bg-input)', borderRadius: 4, fontSize: 11, whiteSpace: 'pre-wrap' }}>{'{{data.driver.name}}'}</pre>
@@ -153,6 +154,18 @@ function SidebarPanel({ allVars, insertVar }) {
               Full paths like <code>{'{{data.driver.name}}'}</code> still resolve from the parent payload.
             </div>
           </div>
+        </div>
+      )}
+
+      {sideTab === 'raw' && (
+        <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+          {rawPayload ? (
+            <pre style={{ margin: 0, padding: 10, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: 11, whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.5 }}>
+              {JSON.stringify(rawPayload, null, 2)}
+            </pre>
+          ) : (
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: 8 }}>No payload available. Create a template from an unmatched event to see the raw payload here.</div>
+          )}
         </div>
       )}
     </div>
@@ -229,7 +242,8 @@ function TemplateModal({ template, sources, vars, onClose, onSaved }) {
     } catch (e) { alert(e.message); } finally { setSaving(false); }
   }
 
-  const allVars = vars || {};
+  const allVars = vars?.vars || vars || {};
+  const rawPayload = vars?.payload || null;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -305,7 +319,7 @@ function TemplateModal({ template, sources, vars, onClose, onSaved }) {
           </div>
 
           {/* Variable sidebar */}
-          <SidebarPanel allVars={allVars} insertVar={insertVar} />
+          <SidebarPanel allVars={allVars} insertVar={insertVar} rawPayload={rawPayload} />
         </div>
 
         <div className="modal-actions">
@@ -415,8 +429,9 @@ export default function Webhooks() {
   async function deleteTemplate(id) { if (confirm('Delete this template?')) { await api.delete(`/webhook-templates/${id}`); reloadTmpl(); } }
 
   function createTemplateFromEvent(event) {
-    const vars = event.flattened_vars || (typeof event.payload === 'object' ? flattenObj(event.payload) : {});
-    setTemplateVars(vars);
+    const payload = typeof event.payload === 'string' ? JSON.parse(event.payload) : (event.payload || {});
+    const vars = flattenObj(payload);
+    setTemplateVars({ vars, payload });
     setEditTemplate({
       _new: true,
       source_id: event.source_id,
@@ -480,7 +495,7 @@ export default function Webhooks() {
       {/* Templates */}
       {tab === 'templates' && (
         <>
-          <div style={{marginBottom:16}}><button className="btn btn-primary btn-sm" onClick={() => { setTemplateVars({}); setEditTemplate(null); }}>+ New Template</button></div>
+          <div style={{marginBottom:16}}><button className="btn btn-primary btn-sm" onClick={() => { setTemplateVars({ vars: {}, payload: null }); setEditTemplate(null); }}>+ New Template</button></div>
           <div className="card">
             <div className="table-wrap">
               <table>
@@ -498,7 +513,7 @@ export default function Webhooks() {
                         <td>{t.assigned_to_agent || '—'}</td>
                         <td>{t.enabled ? <span className="badge badge-healthy">on</span> : <span className="badge badge-cancelled">off</span>}</td>
                         <td className="btn-group">
-                          <button className="btn btn-sm" onClick={() => { setTemplateVars({}); setEditTemplate(t); }}>Edit</button>
+                          <button className="btn btn-sm" onClick={() => { setTemplateVars({ vars: {}, payload: null }); setEditTemplate(t); }}>Edit</button>
                           <button className="btn btn-sm btn-danger" onClick={() => deleteTemplate(t.id)}>Del</button>
                         </td>
                       </tr>
