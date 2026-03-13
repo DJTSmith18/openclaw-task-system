@@ -83,6 +83,82 @@ function SourceModal({ source, onClose, onSaved }) {
   );
 }
 
+// ── Sidebar Panel (Variables + Syntax Reference) ────────────────────────────
+function SidebarPanel({ allVars, insertVar }) {
+  const [sideTab, setSideTab] = useState('vars');
+  const sideTabStyle = (id) => ({
+    padding: '6px 12px', fontSize: 12, fontWeight: sideTab === id ? 600 : 400,
+    color: sideTab === id ? 'var(--accent)' : 'var(--text-dim)',
+    background: 'transparent', border: 'none', cursor: 'pointer',
+    borderBottom: sideTab === id ? '2px solid var(--accent)' : '2px solid transparent',
+    marginBottom: -1,
+  });
+
+  return (
+    <div>
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 10 }}>
+        <button style={sideTabStyle('vars')} onClick={() => setSideTab('vars')}>Variables</button>
+        <button style={sideTabStyle('ref')} onClick={() => setSideTab('ref')}>Syntax Reference</button>
+      </div>
+
+      {sideTab === 'vars' && (
+        <>
+          <div className="var-list">
+            {Object.keys(allVars).length === 0 ? (
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: 8 }}>No variables available. Send a webhook event first, then create a template from the Unmatched tab.</div>
+            ) : (
+              Object.entries(allVars).map(([k, v]) => (
+                <div key={k} className="var-item" onClick={() => insertVar(k)} title={`Click to insert {{${k}}}`}>
+                  <span className="var-name">{k}</span>
+                  <span className="var-value">{typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 80)}</span>
+                </div>
+              ))
+            )}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>Click a variable to insert <code>{'{{var}}'}</code> at cursor.</div>
+        </>
+      )}
+
+      {sideTab === 'ref' && (
+        <div style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-dim)' }}>
+          <div style={{ marginBottom: 12 }}>
+            <strong style={{ color: 'var(--text)' }}>Simple Variable</strong>
+            <pre style={{ margin: '4px 0', padding: 8, background: 'var(--bg-input)', borderRadius: 4, fontSize: 11, whiteSpace: 'pre-wrap' }}>{'{{data.driver.name}}'}</pre>
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <strong style={{ color: 'var(--text)' }}>Fallback (default value)</strong>
+            <pre style={{ margin: '4px 0', padding: 8, background: 'var(--bg-input)', borderRadius: 4, fontSize: 11, whiteSpace: 'pre-wrap' }}>{'{{data.driver.name || "Unknown"}}'}</pre>
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <strong style={{ color: 'var(--text)' }}>Conditional (ternary)</strong>
+            <pre style={{ margin: '4px 0', padding: 8, background: 'var(--bg-input)', borderRadius: 4, fontSize: 11, whiteSpace: 'pre-wrap' }}>{'{{data.dvir.hasDefects ? "DEFECTS FOUND" : "All clear"}}'}</pre>
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <strong style={{ color: 'var(--text)' }}>Array Length</strong>
+            <pre style={{ margin: '4px 0', padding: 8, background: 'var(--bg-input)', borderRadius: 4, fontSize: 11, whiteSpace: 'pre-wrap' }}>{'{{data.dvir.defects.length}} defects'}</pre>
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <strong style={{ color: 'var(--text)' }}>Direct Array Access</strong>
+            <pre style={{ margin: '4px 0', padding: 8, background: 'var(--bg-input)', borderRadius: 4, fontSize: 11, whiteSpace: 'pre-wrap' }}>{'First: {{data.dvir.defects.0.defectType}}'}</pre>
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <strong style={{ color: 'var(--text)' }}>Loop Over Array</strong>
+            <pre style={{ margin: '4px 0', padding: 8, background: 'var(--bg-input)', borderRadius: 4, fontSize: 11, whiteSpace: 'pre-wrap' }}>{'{{#each data.dvir.defects}}{{@number}}. {{defectType}}: {{comment}}\n{{/each}}'}</pre>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+              Inside <code>{'{{#each}}'}</code> blocks:<br/>
+              <code>{'{{propName}}'}</code> — property from current item<br/>
+              <code>{'{{nested.prop}}'}</code> — nested property from item<br/>
+              <code>{'{{@index}}'}</code> — 0-based position<br/>
+              <code>{'{{@number}}'}</code> — 1-based position<br/>
+              Full paths like <code>{'{{data.driver.name}}'}</code> still resolve from the parent payload.
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Template Modal ───────────────────────────────────────────────────────────
 function TemplateModal({ template, sources, vars, onClose, onSaved }) {
   const isNew = !template;
@@ -159,7 +235,7 @@ function TemplateModal({ template, sources, vars, onClose, onSaved }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal modal-wide" onClick={e => e.stopPropagation()}>
         <h2>{isNew ? 'New' : 'Edit'} Webhook Template</h2>
-        <div style={{display:'grid', gridTemplateColumns:'1fr 240px', gap:20}}>
+        <div style={{display:'grid', gridTemplateColumns:'1fr 320px', gap:20}}>
           <div>
             <div className="form-row">
               <div className="form-group"><label>Source *</label>
@@ -207,6 +283,7 @@ function TemplateModal({ template, sources, vars, onClose, onSaved }) {
               <div className="form-group">
                 <label>Description</label>
                 <textarea id="tmpl-task_description_template" value={form.task_description_template} onChange={e => set('task_description_template', e.target.value)} onFocus={() => setActiveField('task_description_template')} placeholder="Details: {{data.details}}" />
+                <small style={{color:'var(--text-muted)',marginTop:4,display:'block'}}>Use {'{{var}}'} syntax. See reference in the sidebar.</small>
               </div>
               <div className="form-row-3">
                 <div className="form-group"><label>Priority (1-4 or expr)</label><input id="tmpl-task_priority_expr" value={form.task_priority_expr} onChange={e => set('task_priority_expr', e.target.value)} onFocus={() => setActiveField('task_priority_expr')} /></div>
@@ -228,22 +305,7 @@ function TemplateModal({ template, sources, vars, onClose, onSaved }) {
           </div>
 
           {/* Variable sidebar */}
-          <div>
-            <div className="section-title">Available Variables</div>
-            <div className="var-list">
-              {Object.keys(allVars).length === 0 ? (
-                <div style={{fontSize:12,color:'var(--text-muted)',padding:8}}>No variables available. Send a webhook event first, then create a template from the Unmatched tab.</div>
-              ) : (
-                Object.entries(allVars).map(([k, v]) => (
-                  <div key={k} className="var-item" onClick={() => insertVar(k)} title={`Click to insert {{${k}}}`}>
-                    <span className="var-name">{k}</span>
-                    <span className="var-value">{typeof v === 'object' ? JSON.stringify(v) : String(v)}</span>
-                  </div>
-                ))
-              )}
-            </div>
-            <div style={{fontSize:11,color:'var(--text-muted)',marginTop:8}}>Click a variable to insert <code>{'{{var}}'}</code> at cursor position in the active field.</div>
-          </div>
+          <SidebarPanel allVars={allVars} insertVar={insertVar} />
         </div>
 
         <div className="modal-actions">
@@ -305,7 +367,17 @@ function flattenObj(obj, prefix = '') {
   const result = {};
   for (const [k, v] of Object.entries(obj || {})) {
     const key = prefix ? `${prefix}.${k}` : k;
-    if (v && typeof v === 'object' && !Array.isArray(v)) {
+    if (Array.isArray(v)) {
+      result[key] = v;
+      result[`${key}.length`] = v.length;
+      v.forEach((item, i) => {
+        if (item && typeof item === 'object' && !Array.isArray(item)) {
+          Object.assign(result, flattenObj(item, `${key}.${i}`));
+        } else {
+          result[`${key}.${i}`] = item;
+        }
+      });
+    } else if (v && typeof v === 'object') {
       Object.assign(result, flattenObj(v, key));
     } else {
       result[key] = v;

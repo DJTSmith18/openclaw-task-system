@@ -8,11 +8,11 @@
     "migrate": "bash scripts/migrate.sh"
   },
   "dependencies": {
-    "pg": "^8.13.1",
-    "express": "^4.21.1",
     "cors": "^2.8.5",
-    "minimatch": "^10.0.1",
-    "crypto": "^1.0.1"
+    "crypto": "^1.0.1",
+    "express": "^4.21.1",
+    "minimatch": "^10.2.4",
+    "pg": "^8.13.1"
   },
   "engines": {
     "node": ">=18.0.0"

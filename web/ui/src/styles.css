@@ -169,7 +169,7 @@ button:hover, .btn:hover { background: var(--bg-hover); }
   border-radius: 12px; padding: 24px; width: 90%; max-width: 640px;
   max-height: 90vh; overflow-y: auto;
 }
-.modal-wide { max-width: 900px; }
+.modal-wide { max-width: 1200px; }
 .modal h2 { font-size: 18px; margin-bottom: 20px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
 
