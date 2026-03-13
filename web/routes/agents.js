@@ -101,8 +101,8 @@ module.exports = function ({ db, eventBus }) {
       const mem = agent.metadata?.memory || {};
       if (!mem.enabled) return res.status(400).json({ error: 'Memory not enabled for this agent' });
 
-      // Fire and forget
-      memoryTimer.triggerCycle(req.params.id, cycle).catch(() => {});
+      const ok = await memoryTimer.triggerCycle(req.params.id, cycle);
+      if (!ok) return res.status(500).json({ error: 'Failed to trigger cycle — check server logs' });
       res.json({ triggered: true, cycle, agent_id: req.params.id });
     } catch (err) { res.status(500).json({ error: err.message }); }
   });
