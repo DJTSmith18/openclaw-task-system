@@ -77,7 +77,7 @@ module.exports = function (api) {
       },
 
       gateway: {
-        startAccount: async ({ abortSignal }) => {
+        startAccount: async ({ abortSignal, cfg: ocCfg }) => {
           const cronFile = (process.env.HOME || '/root') + '/.openclaw/cron/jobs.json';
 
           const openclawJsonPath = (process.env.HOME || '/root') + '/.openclaw/openclaw.json';
@@ -102,6 +102,7 @@ module.exports = function (api) {
             openclawJsonPath,
             eventBus,
             cfg,
+            ocCfg: ocCfg || api.config,
           });
 
           await activeServer.start(abortSignal);

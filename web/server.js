@@ -21,6 +21,7 @@ class WebServer {
     this.openclawJsonPath = opts.openclawJsonPath || '';
     this.eventBus = opts.eventBus || null;
     this.cfg = opts.cfg || {};
+    this.ocCfg = opts.ocCfg || {};  // full openclaw config for channel dispatch
     this._server = null;
   }
 
@@ -116,7 +117,7 @@ class WebServer {
       // Start programmatic scheduler timers (replaces scheduler agent cron jobs)
       schedulerTimer.start(this.db, this.runtime, this.logger, this.eventBus, this.cfg);
       // Start memory cycle timer (dream, rumination, sensor sweep)
-      memoryTimer.start(this.db, this.runtime, this.logger, this.eventBus);
+      memoryTimer.start(this.db, this.runtime, this.logger, this.eventBus, this.ocCfg);
 
       this._server = app.listen(this.port, this.host, () => {
         this.logger.info(`[task-system] web server listening on ${this.host}:${this.port}`);
