@@ -62,21 +62,37 @@ module.exports = function ({ db, eventBus }) {
     } catch (err) { res.status(500).json({ error: err.message }); }
   });
 
-  // Pending responses — tasks awaiting a reply from a specific contact (used by SMS plugins)
+  // Pending responses — tasks awaiting a reply from a specific contact or conversation
+  // Supports: ?contact=PHONE (10-digit) and/or ?conversation=CONV_SID
+  // Matches metadata.awaiting_response_from against either value
   r.get('/tasks/pending-responses', async (req, res) => {
     try {
-      const raw = (req.query.contact || '').replace(/\D/g, '').slice(-10);
-      if (raw.length < 10) return res.json({ tasks: [] });
+      const phone = (req.query.contact || '').replace(/\D/g, '').slice(-10);
+      const conversation = (req.query.conversation || '').trim();
+
+      if (phone.length < 10 && !conversation) return res.json({ tasks: [] });
+
+      // Build OR conditions for matching
+      const conditions = [];
+      const params = [];
+      if (phone.length >= 10) {
+        params.push(phone);
+        conditions.push(`t.metadata->>'awaiting_response_from' = $${params.length}`);
+      }
+      if (conversation) {
+        params.push(conversation);
+        conditions.push(`t.metadata->>'awaiting_response_from' = $${params.length}`);
+      }
 
       const tasks = await db.getMany(
         `SELECT t.id, t.title, t.status, t.priority, t.assigned_to_agent,
                 LEFT(t.description, 200) AS description
          FROM tasks t
          WHERE t.status IN ('waiting', 'blocked', 'in_progress')
-           AND t.metadata->>'awaiting_response_from' = $1
+           AND (${conditions.join(' OR ')})
          ORDER BY t.priority ASC, t.updated_at DESC
          LIMIT 5`,
-        [raw]
+        params
       );
 
       for (const t of tasks) {
