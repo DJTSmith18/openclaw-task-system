@@ -42,12 +42,11 @@ function ObservationsTab({ agentId }) {
   const query = agentId ? `/memory/observations?agent_id=${agentId}&limit=100` : '/memory/observations?limit=100';
   const { data, loading, error, reload } = useApi(query);
   const [expanded, setExpanded] = useState(null);
+  const obs = data?.observations || [];
+  const { sorted: sortedObs, SortTh } = useSort(obs, OBS_COLUMNS);
 
   if (loading) return <div className="loading">Loading observations...</div>;
   if (error) return <div className="error">{error}</div>;
-
-  const obs = data?.observations || [];
-  const { sorted: sortedObs, SortTh } = useSort(obs, OBS_COLUMNS);
 
   return (
     <div>
@@ -136,12 +135,11 @@ function LongTermTab({ agentId }) {
 function DreamLogTab({ agentId }) {
   const query = agentId ? `/memory/dream-log?agent_id=${agentId}&limit=30` : '/memory/dream-log?limit=30';
   const { data, loading, error, reload } = useApi(query);
+  const logs = data?.logs || [];
+  const { sorted: sortedLogs, SortTh } = useSort(logs, DREAM_COLUMNS);
 
   if (loading) return <div className="loading">Loading dream log...</div>;
   if (error) return <div className="error">{error}</div>;
-
-  const logs = data?.logs || [];
-  const { sorted: sortedLogs, SortTh } = useSort(logs, DREAM_COLUMNS);
 
   return (
     <div>
