@@ -264,27 +264,61 @@ function TemplateModal({ template, sources, vars, onClose, onSaved }) {
             {/* Match Rules */}
             <div className="section">
               <div className="flex-between"><div className="section-title">Match Rules (AND)</div><button className="btn btn-sm" onClick={addRule}>+ Rule</button></div>
-              {form.match_rules.map((rule, i) => (
-                <div key={i} className="form-row-3" style={{marginBottom:8, alignItems:'end'}}>
-                  <div className="form-group"><label>Path</label><input value={rule.path} onChange={e => updateRule(i, 'path', e.target.value)} placeholder="event" /></div>
-                  <div className="form-group"><label>Op</label>
-                    <select value={rule.op} onChange={e => updateRule(i, 'op', e.target.value)}>
-                      {['eq','neq','glob','regex','in','gt','lt','exists'].map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
-                  </div>
-                  <div className="form-group" style={{position:'relative'}}>
-                    <label>Value</label>
-                    <div style={{display:'flex',gap:4}}>
-                      {rule.op === 'exists'
-                        ? <span style={{padding:'6px 10px',color:'var(--text-muted)',fontSize:12}}>key exists</span>
-                        : <input value={typeof rule.value === 'object' ? JSON.stringify(rule.value) : rule.value} onChange={e => updateRule(i, 'value', e.target.value)} />
-                      }
-                      <button className="btn btn-sm btn-danger" style={{padding:'4px 8px'}} onClick={() => removeRule(i)}>×</button>
+              {form.match_rules.map((rule, i) => {
+                const hasVars = Object.keys(allVars).length > 0;
+                const actual = hasVars ? allVars[rule.path] : undefined;
+                const passes = hasVars && rule.path ? evaluateOp(actual, rule.op, rule.value) : null;
+                return (
+                  <div key={i} style={{marginBottom:10}}>
+                    <div className="form-row-3" style={{alignItems:'end', marginBottom: hasVars && rule.path ? 0 : undefined}}>
+                      <div className="form-group"><label>Path</label><input value={rule.path} onChange={e => updateRule(i, 'path', e.target.value)} placeholder="event" /></div>
+                      <div className="form-group"><label>Op</label>
+                        <select value={rule.op} onChange={e => updateRule(i, 'op', e.target.value)}>
+                          {['eq','neq','glob','regex','in','gt','lt','exists'].map(o => <option key={o} value={o}>{o}</option>)}
+                        </select>
+                      </div>
+                      <div className="form-group" style={{position:'relative'}}>
+                        <label>Value</label>
+                        <div style={{display:'flex',gap:4}}>
+                          {rule.op === 'exists'
+                            ? <span style={{padding:'6px 10px',color:'var(--text-muted)',fontSize:12}}>key exists</span>
+                            : <input value={typeof rule.value === 'object' ? JSON.stringify(rule.value) : rule.value} onChange={e => updateRule(i, 'value', e.target.value)} />
+                          }
+                          <button className="btn btn-sm btn-danger" style={{padding:'4px 8px'}} onClick={() => removeRule(i)}>×</button>
+                        </div>
+                      </div>
                     </div>
+                    {hasVars && rule.path && (
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px',
+                        fontSize: 11, borderRadius: 4, marginTop: 2,
+                        background: passes ? 'rgba(80,200,120,0.08)' : 'rgba(255,80,80,0.08)',
+                        border: `1px solid ${passes ? 'rgba(80,200,120,0.25)' : 'rgba(255,80,80,0.25)'}`,
+                      }}>
+                        <span style={{ fontWeight: 700, color: passes ? 'var(--success, #50c878)' : 'var(--error, #ff5050)' }}>
+                          {passes ? 'PASS' : 'FAIL'}
+                        </span>
+                        <span style={{ color: 'var(--text-muted)' }}>
+                          actual: <code style={{ color: 'var(--text)', background: 'var(--bg-input)', padding: '1px 4px', borderRadius: 3 }}>
+                            {actual === undefined ? '(undefined)' : actual === null ? '(null)' : typeof actual === 'boolean' ? `${actual} (boolean)` : String(actual)}
+                          </code>
+                        </span>
+                        {typeof actual !== typeof rule.value && actual !== undefined && rule.value !== '' && (
+                          <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                            type: {typeof actual} vs {typeof rule.value}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {form.match_rules.length === 0 && <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:12}}>No rules = match all events from this source</div>}
+              {form.match_rules.length > 0 && Object.keys(allVars).length === 0 && (
+                <div style={{fontSize:11,color:'var(--text-muted)',marginTop:4,fontStyle:'italic'}}>
+                  Create template from an unmatched event to see live rule matching.
+                </div>
+              )}
             </div>
 
             {/* Task Template */}
@@ -375,6 +409,47 @@ function EventDetailModal({ event, onClose, onCreateTemplate }) {
       </div>
     </div>
   );
+}
+
+// ── Client-side match rule evaluator (mirrors server-side evaluateOp) ────────
+function evaluateOp(actual, op, expected) {
+  switch (op) {
+    case 'eq':
+      if (typeof actual === 'boolean') return String(actual) === String(expected);
+      if (typeof expected === 'boolean') return String(actual) === String(expected);
+      return actual == expected; // eslint-disable-line eqeqeq
+    case 'neq':
+      if (typeof actual === 'boolean') return String(actual) !== String(expected);
+      if (typeof expected === 'boolean') return String(actual) !== String(expected);
+      return actual != expected; // eslint-disable-line eqeqeq
+    case 'glob':
+      // Simple glob: just check prefix/suffix for * patterns
+      if (typeof actual !== 'string') return false;
+      const pat = String(expected);
+      if (pat.startsWith('*') && pat.endsWith('*')) return actual.includes(pat.slice(1, -1));
+      if (pat.startsWith('*')) return actual.endsWith(pat.slice(1));
+      if (pat.endsWith('*')) return actual.startsWith(pat.slice(0, -1));
+      return actual === pat;
+    case 'regex':
+      try { return typeof actual === 'string' && new RegExp(expected).test(actual); }
+      catch { return false; }
+    case 'in': {
+      let arr = expected;
+      if (typeof expected === 'string') { try { arr = JSON.parse(expected); } catch { return false; } }
+      return Array.isArray(arr) && arr.includes(actual);
+    }
+    case 'gt':
+      return Number(actual) > Number(expected);
+    case 'lt':
+      return Number(actual) < Number(expected);
+    case 'exists': {
+      const wantExists = expected !== false && expected !== 'false' && expected !== 'no';
+      const doesExist = actual !== undefined && actual !== null;
+      return wantExists ? doesExist : !doesExist;
+    }
+    default:
+      return false;
+  }
 }
 
 function flattenObj(obj, prefix = '') {
