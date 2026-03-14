@@ -261,13 +261,13 @@ export default function CronJobs() {
   async function toggleTemplate(id) { await api.patch(`/task-templates/${id}/toggle`); tmplReload(); }
   async function deleteTemplate(id) { if (confirm('Delete this task template?')) { await api.delete(`/task-templates/${id}`); tmplReload(); } }
 
-  if (cronLoading || tmplLoading) return <div className="loading">Loading...</div>;
-  if (cronError || tmplError) return <div className="error">{cronError || tmplError}</div>;
-
   const agentJobs = (cronData?.jobs || []).map(j => ({ ...j, _type: 'agent' }));
   const templates = (tmplData?.templates || []).map(t => ({ ...t, _type: 'template' }));
   const allItems = [...agentJobs, ...templates];
   const { sorted: sortedItems, SortTh } = useSort(allItems, CRON_COLUMNS);
+
+  if (cronLoading || tmplLoading) return <div className="loading">Loading...</div>;
+  if (cronError || tmplError) return <div className="error">{cronError || tmplError}</div>;
 
   function reload() { cronReload(); tmplReload(); }
 
